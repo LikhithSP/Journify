@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { motion } from 'framer-motion';
-import { LogIn, AlertCircle, Mail, Lock } from 'lucide-react';
+import { LogIn, AlertCircle, Mail, Lock, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface LoginFormData {
   email: string;
@@ -13,6 +14,7 @@ interface LoginFormData {
 export default function LoginPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>();
   const { signIn } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -44,6 +46,22 @@ export default function LoginPage() {
       exit={{ opacity: 0 }}
       className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-950 overflow-hidden relative"
     >
+      {/* Theme Toggle Button */}
+      <motion.button
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3 }}
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-md hover:shadow-lg backdrop-blur-sm z-50 transition-all duration-300"
+        aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
+      >
+        {theme === 'light' ? (
+          <Moon size={18} className="text-gray-800" />
+        ) : (
+          <Sun size={18} className="text-amber-300" />
+        )}
+      </motion.button>
+      
       {/* Decorative elements */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-50 dark:opacity-20">
         <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary-200 dark:bg-primary-900 rounded-full blur-3xl"></div>
