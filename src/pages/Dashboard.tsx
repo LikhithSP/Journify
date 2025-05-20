@@ -21,7 +21,6 @@ export default function Dashboard() {
   } = useOfflineSync();
     const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterMood, setFilterMood] = useState<string | null>(null);
@@ -33,7 +32,6 @@ export default function Dashboard() {
       if (!user) return;
 
       try {
-        setLoading(true);
         const { data, error } = await fetchEntries();
         
         if (error) throw error;
@@ -53,8 +51,6 @@ export default function Dashboard() {
       } catch (error) {
         console.error('Error fetching journal entries:', error);
         setError('Failed to load your journal entries. Please try again later.');
-      } finally {
-        setLoading(false);
       }
     }
 
