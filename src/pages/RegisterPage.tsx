@@ -56,7 +56,7 @@ export default function RegisterPage() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-gray-900 overflow-hidden relative"
+      className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 overflow-hidden relative"
     >
       {/* Theme Toggle Button */}
       <motion.button
@@ -79,8 +79,9 @@ export default function RegisterPage() {
         <div className="absolute bottom-20 left-20 w-64 h-64 border border-gray-200 dark:border-gray-700 rounded-full"></div>
       </div>
         {/* Register container */}
-      <div className="w-full max-w-5xl z-10 flex flex-col md:flex-row overflow-hidden rounded-lg shadow-md border border-gray-100 dark:border-gray-800">        {/* Image side */}
-        <div className="md:w-1/2 relative bg-gray-50 dark:bg-gray-800 hidden md:block overflow-hidden">
+      <div className="w-full max-w-5xl z-10 flex flex-col md:flex-row overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900">
+        {/* Image side */}
+        <div className="md:w-1/2 relative bg-neutral-100 dark:bg-neutral-900 hidden md:flex items-center justify-center overflow-hidden p-0">
           <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 z-10"></div>
           
           {/* Notion-inspired minimal pattern */}
@@ -138,7 +139,7 @@ export default function RegisterPage() {
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="md:w-1/2 bg-white dark:bg-gray-900 p-8 md:p-12"
+          className="md:w-1/2 bg-white dark:bg-neutral-900 p-8 md:p-12"
         >          <motion.div 
             initial={{ y: 10 }} 
             animate={{ y: 0 }}
@@ -186,7 +187,7 @@ export default function RegisterPage() {
                   id="email"
                   type="email"
                   autoComplete="email"
-                  className="input w-full pl-10 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
+                  className="input w-full pl-10 bg-gray-50 dark:bg-[rgb(43,44,47,0.5)] border border-gray-200 dark:border-[rgb(42,42,43)] focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
                   placeholder="you@example.com"
                   {...register('email', { 
                     required: 'Email is required', 
@@ -221,7 +222,7 @@ export default function RegisterPage() {
                   id="password"
                   type="password"
                   autoComplete="new-password"
-                  className="input w-full pl-10 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
+                  className="input w-full pl-10 bg-gray-50 dark:bg-[rgb(43,44,47,0.5)] border border-gray-200 dark:border-[rgb(42,42,43)] focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
                   placeholder="••••••••"
                   {...register('password', { 
                     required: 'Password is required',
@@ -256,7 +257,7 @@ export default function RegisterPage() {
                   id="passwordConfirm"
                   type="password"
                   autoComplete="new-password"
-                  className="input w-full pl-10 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
+                  className="input w-full pl-10 bg-gray-50 dark:bg-[rgb(43,44,47,0.5)] border border-gray-200 dark:border-[rgb(42,42,43)] focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
                   placeholder="••••••••"
                   {...register('passwordConfirm', { 
                     required: 'Please confirm your password',
@@ -280,7 +281,7 @@ export default function RegisterPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center mt-6 py-2 px-4 rounded-md bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center mt-6 py-2 px-4 rounded-md bg-black hover:bg-gray-800 dark:bg-[rgb(239,235,235,0.96)] dark:hover:bg-gray-200 text-white dark:text-black text-sm font-medium transition-colors"
             >
               {loading ? (
                 <span className="inline-block h-4 w-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin mr-2"></span>
@@ -302,7 +303,7 @@ export default function RegisterPage() {
             </Link>
           </div>
           
-          <div className="mt-10 text-center text-xs text-gray-400 dark:text-gray-500">
+          <div className="mt-10 text-center text-xs text-gray-400 dark:text-white">
             © {new Date().getFullYear()} Journify. All rights reserved.
           </div>
         </motion.div>
