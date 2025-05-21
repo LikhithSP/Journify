@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync';
+import { useOfflineSync } from '../hooks/useOfflineSync.fixed';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -19,7 +19,7 @@ export default function Dashboard() {
     fetchEntries,
     syncPendingOperations
   } = useOfflineSync();
-    const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+
   useEffect(() => {
     async function loadEntries() {
       if (!user) return;
@@ -37,13 +38,14 @@ export default function Dashboard() {
         if (error) throw error;
         
         // Store all entries for filtering
-        setAllEntries(data);
+        const journalEntries = data as JournalEntry[];
+        setAllEntries(journalEntries);
         
         // Extract all unique tags for filtering
         const tags = new Set<string>();
-        data.forEach(entry => {
+        journalEntries.forEach(entry => {
           if (entry.tags && entry.tags.length > 0) {
-            entry.tags.forEach(tag => tags.add(tag));
+            entry.tags.forEach((tag: string) => tags.add(tag));
           }
         });
         setAvailableTags(Array.from(tags).sort());
@@ -117,7 +119,6 @@ export default function Dashboard() {
     hidden: { opacity: 0, y: 20 },
     visible: { opacity: 1, y: 0 }
   };
-
   if (error) {
     return (
       <div className="flex flex-col items-center justify-center h-full">

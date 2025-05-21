@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Edit, Star, Calendar, Clock } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync';
+import { useOfflineSync } from '../hooks/useOfflineSync.fixed';
 
 export default function EntryPage() {
   const { id } = useParams<{ id: string }>();
@@ -21,21 +21,18 @@ export default function EntryPage() {
       if (!id || !user) return;
 
       try {
-        // Get all entries (cached or from API)
-        const { data, error } = await fetchEntries();
+        // Get the single entry by ID
+        const { data, error } = await fetchEntries(id);
 
         if (error) {
-          throw new Error(`Error fetching entries: ${error.message}`);
+          throw new Error(`Error fetching entry: ${error.message}`);
         }
 
-        // Find the requested entry
-        const foundEntry = data.find(entry => entry.id === id);
-        
-        if (!foundEntry) {
+        if (!data) {
           throw new Error('Entry not found');
         }
 
-        setEntry(foundEntry);
+        setEntry(data as JournalEntry);
       } catch (error) {
         console.error(error);
         setError(error instanceof Error ? error.message : 'An unexpected error occurred');
@@ -92,7 +89,6 @@ export default function EntryPage() {
       setError(error instanceof Error ? error.message : 'Failed to update favorite status');
     }
   };
-
   if (error) {
     return (
       <div className="max-w-4xl mx-auto">
