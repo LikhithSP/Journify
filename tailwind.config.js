@@ -7,9 +7,10 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
-        title: ['Helvetica Bold', 'Inter', 'Arial', 'sans-serif'],
+        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
+        title: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
         accent: ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
+        mono: ['SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       colors: {
         primary: {
@@ -25,9 +26,24 @@ module.exports = {
           900: '#0c4a6e',
           950: '#082f49',
         },
+        gray: {
+          750: '#2c2c2c',
+        },
         background: {
           light: '#ffffff',
-          dark: '#121212',
+          dark: '#191919',
+        },
+        notion: {
+          default: '#37352f',
+          gray: '#9b9a97',
+          brown: '#64473a',
+          orange: '#d9730d',
+          yellow: '#dfab01',
+          green: '#0f7b6c',
+          blue: '#0b6e99',
+          purple: '#6940a5',
+          pink: '#ad1a72',
+          red: '#e03e3e',
         },
         mood: {
           joyful: '#FFD166',   // Yellow
