@@ -39,13 +39,20 @@ export default function LoginPage() {
     }
   };
 
-  return (    <motion.div 
+  return (
+    <motion.div 
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-gray-900 overflow-hidden relative"
+      className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 overflow-hidden relative"
     >
-      {/* Theme Toggle Button */}      <motion.button
+      {/* Fixed Journify logo in top left */}
+      <div className="fixed top-4 left-4 z-50 flex items-center">
+        <div className="w-10 h-10 rounded bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-lg font-medium mr-2">J</div>
+        <span className="text-xl font-semibold text-gray-900 dark:text-gray-100 hidden sm:inline">Journify</span>
+      </div>
+      {/* Theme Toggle Button */}
+      <motion.button
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -59,73 +66,37 @@ export default function LoginPage() {
           <Sun size={16} className="text-gray-700 dark:text-gray-300" />
         )}
       </motion.button>
-        {/* Notion-inspired subtle decorative elements */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 opacity-20 dark:opacity-10">
-        <div className="absolute top-20 right-20 w-96 h-96 border border-gray-200 dark:border-gray-700 rounded-full"></div>
-        <div className="absolute bottom-20 left-20 w-64 h-64 border border-gray-200 dark:border-gray-700 rounded-full"></div>
-      </div>
-        {/* Login container */}
-      <div className="w-full max-w-5xl z-10 flex flex-col md:flex-row overflow-hidden rounded-lg shadow-md border border-gray-100 dark:border-gray-800">        {/* Image side */}
-        <div className="md:w-1/2 relative bg-gray-50 dark:bg-gray-800 hidden md:block overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 z-10"></div>
-          
+      {/* Login container */}
+      <div className="w-full max-w-5xl z-10 flex flex-col md:flex-row overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900">
+        {/* Image side */}
+        <div className="md:w-1/2 relative bg-neutral-100 dark:bg-neutral-900 hidden md:flex items-center justify-center overflow-hidden p-0">
+          <img 
+            src="/not-o.avif" 
+            alt="Journal illustration" 
+            className="absolute inset-0 w-full h-full object-cover object-center z-10 dark:brightness-75" 
+            draggable="false"
+          />
           {/* Notion-inspired minimal pattern */}
-          <div className="absolute inset-0 opacity-5 dark:opacity-10 z-0">
+          <div className="absolute inset-0 opacity-5 dark:opacity-10 z-0 pointer-events-none">
             <svg width="100%" height="100%" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
               <defs>
                 <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
-                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-gray-800 dark:text-gray-300" />
+                  <path d="M 20 0 L 0 0 0 20" fill="none" stroke="currentColor" strokeWidth="0.5" className="text-gray-400 dark:text-gray-700" />
                 </pattern>
               </defs>
               <rect width="100%" height="100%" fill="url(#grid)" />
             </svg>
           </div>
-            <div className="absolute inset-0 flex flex-col justify-center items-center text-gray-800 dark:text-gray-100 z-20 p-12">
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.5 }}
-              className="mb-10"
-            >
-              <div className="w-16 h-16 rounded bg-black dark:bg-white text-white dark:text-black flex items-center justify-center text-2xl font-medium">
-                J
-              </div>
-            </motion.div>
-            <motion.h2 
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.6 }}
-              className="text-3xl md:text-3xl font-semibold mb-6 text-center"
-            >
-              Your Journal, <br />Your Journey
-            </motion.h2>
-            <motion.p 
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="text-center mb-8 text-gray-600 dark:text-gray-400 max-w-xs"
-            >
-              Capture your thoughts, memories, and inspirations all in one beautiful place.
-            </motion.p>
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.8 }}
-              className="flex flex-wrap justify-center gap-2"
-            >
-              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs text-gray-600 dark:text-gray-300">Offline Support</span>
-              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs text-gray-600 dark:text-gray-300">Rich Text Editor</span>
-              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs text-gray-600 dark:text-gray-300">Mood Tracking</span>
-            </motion.div>
-          </div>
         </div>
-          {/* Form side */}
+        {/* Form side */}
         <motion.div 
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.3 }}
-          className="md:w-1/2 bg-white dark:bg-gray-900 p-8 md:p-12"
-        >          <motion.div 
+          className="md:w-1/2 bg-white dark:bg-neutral-900 p-8 md:p-12"
+        >
+          {/* Remove in-container logo for mobile (already in fixed top left) */}
+          <motion.div 
             initial={{ y: 10 }} 
             animate={{ y: 0 }}
             transition={{ delay: 0.2, type: "spring", stiffness: 260, damping: 20 }}
@@ -172,7 +143,7 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   autoFocus
-                  className="input w-full pl-10 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
+                  className="input w-full pl-10 bg-gray-50 dark:bg-[rgb(43,44,47,0.5)] border border-gray-200 dark:border-[rgb(42,42,43)] focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
                   placeholder="you@example.com"
                   {...register('email', { 
                     required: 'Email is required', 
@@ -211,7 +182,7 @@ export default function LoginPage() {
                   id="password"
                   type="password"
                   autoComplete="current-password"
-                  className="input w-full pl-10 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
+                  className="input w-full pl-10 bg-gray-50 dark:bg-[rgb(43,44,47,0.5)] border border-gray-200 dark:border-[rgb(42,42,43)] focus:border-gray-400 dark:focus:border-gray-600 focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 transition-colors"
                   placeholder="••••••••"
                   {...register('password', { required: 'Password is required' })}
                 />
@@ -230,7 +201,7 @@ export default function LoginPage() {
               whileTap={{ scale: 0.98 }}
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center mt-6 py-2 px-4 rounded-md bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black text-sm font-medium transition-colors"
+              className="w-full flex items-center justify-center mt-6 py-2 px-4 rounded-md bg-black hover:bg-gray-800 dark:bg-[rgb(239,235,235,0.96)] dark:hover:bg-gray-200 text-white dark:text-black text-sm font-medium transition-colors"
             >
               {loading ? (
                 <span className="inline-block h-4 w-4 border-2 border-white dark:border-black border-t-transparent rounded-full animate-spin mr-2"></span>
@@ -246,13 +217,13 @@ export default function LoginPage() {
               <span className="mx-4 text-xs text-gray-500 dark:text-gray-400">or</span>
               <div className="border-t border-gray-200 dark:border-gray-800 flex-grow"></div>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 text-sm">Don't have an account?</p>
+            <p className="text-gray-600 dark:text-gray-400 text-sm">Don&apos;t have an account?</p>
             <Link to="/register" className="inline-block mt-2 text-gray-800 dark:text-gray-200 hover:text-black dark:hover:text-white font-medium transition-colors">
               Create an account
             </Link>
           </div>
           
-          <div className="mt-10 text-center text-xs text-gray-400 dark:text-gray-500">
+          <div className="mt-10 text-center text-xs text-gray-400 dark:text-white">
             © {new Date().getFullYear()} Journify. All rights reserved.
           </div>
         </motion.div>
