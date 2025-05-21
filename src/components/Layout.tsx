@@ -41,6 +41,14 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen bg-white dark:bg-gray-900">
+      {/* Theme Toggle Button (top right, fixed) */}
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 z-50 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {theme === 'dark' ? <Sun size={16} className="text-gray-300" /> : <Moon size={16} className="text-gray-700" />}
+      </button>
       {/* Mobile Menu Toggle */}
       <div className="lg:hidden fixed top-4 left-4 z-20">
         <button 
@@ -139,16 +147,7 @@ export default function Layout() {
                     </div>
                     <div className="text-sm truncate max-w-[120px]">{user?.email}</div>
                   </div>
-                  
-                  <button
-                    onClick={toggleTheme}
-                    className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-gray-800"
-                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                  >
-                    {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-                  </button>
                 </div>
-                
                 <div className="flex justify-between text-xs">
                   <button 
                     className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center"
