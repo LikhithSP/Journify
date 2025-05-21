@@ -82,7 +82,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-5xl z-10 flex flex-col md:flex-row overflow-hidden rounded-lg shadow-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900">
         {/* Image side */}
         <div className="md:w-1/2 relative bg-neutral-100 dark:bg-neutral-900 hidden md:flex items-center justify-center overflow-hidden p-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 z-10"></div>
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-[rgb(23,23,23)] dark:to-[rgb(23,23,23)] z-10"></div>
           
           {/* Notion-inspired minimal pattern */}
           <div className="absolute inset-0 opacity-5 dark:opacity-10 z-0">
