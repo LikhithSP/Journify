@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
@@ -27,21 +27,23 @@ export default function Dashboard() {
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const lastFetchRef = useRef(0);
 
   useEffect(() => {
     async function loadEntries() {
       if (!user) return;
-
+      const now = Date.now();
+      // Only allow fetch if at least 10ms passed since last fetch
+      if (now - lastFetchRef.current < 10) return;
+      lastFetchRef.current = now;
+      setLoading(true);
       try {
         const { data, error } = await fetchEntries();
-        
         if (error) throw error;
-        
-        // Store all entries for filtering
         const journalEntries = data as JournalEntry[];
         setAllEntries(journalEntries);
-        
-        // Extract all unique tags for filtering
         const tags = new Set<string>();
         journalEntries.forEach(entry => {
           if (entry.tags && entry.tags.length > 0) {
@@ -49,15 +51,17 @@ export default function Dashboard() {
           }
         });
         setAvailableTags(Array.from(tags).sort());
-        
+        setError(null);
       } catch (error) {
         console.error('Error fetching journal entries:', error);
         setError('Failed to load your journal entries. Please try again later.');
+      } finally {
+        setLoading(false);
       }
     }
 
     loadEntries();
-  }, [user, fetchEntries]);
+  }, [user, fetchEntries, location.key]);
   
   // Filter and sort entries based on filters
   const filteredEntries = useMemo(() => {
@@ -139,7 +143,7 @@ export default function Dashboard() {
     );
   }
 
-  if (entries.length === 0) {
+  if (!loading && entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh]">
         <div className="text-primary-500 mb-4">
