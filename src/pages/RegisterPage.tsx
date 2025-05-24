@@ -128,9 +128,9 @@ export default function RegisterPage() {
               transition={{ delay: 0.8 }}
               className="flex flex-wrap justify-center gap-2"
             >
-              <span className="inline-block px-4 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium mr-2 mb-2">Free to Use</span>
-              <span className="inline-block px-4 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium mr-2 mb-2">Privacy First</span>
-              <span className="inline-block px-4 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium mb-2">Minimalistic</span>
+              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs text-gray-600 dark:text-gray-300">Free to Use</span>
+              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs text-gray-600 dark:text-gray-300">Privacy First</span>
+              <span className="px-3 py-1 bg-gray-100 dark:bg-gray-700/50 rounded-full text-xs text-gray-600 dark:text-gray-300">Minimalistic</span>
             </motion.div>
           </div>
         </div>
