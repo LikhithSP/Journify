@@ -53,8 +53,6 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
       } catch (error) {
         console.error('Error fetching journal entries:', error);
         setError('Failed to load your journal entries. Please try again later.');
-      } finally {
-        setLoading(false);
       }
     }
 
