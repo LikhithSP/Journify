@@ -38,7 +38,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex h-screen bg-white dark:bg-gray-900">
+    <div className="flex h-screen w-screen bg-white dark:bg-[rgb(23,23,23)]">
       {/* Theme Toggle Button (top right, fixed) */}
       <button
         onClick={toggleTheme}
@@ -59,12 +59,13 @@ export default function Layout() {
       
       {/* Sidebar */}
       <AnimatePresence mode="wait">
-        {sidebarOpen && (          <motion.aside
+        {sidebarOpen && (
+          <motion.aside
             initial={{ x: -280 }}
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ duration: 0.2 }}
-            className="w-56 md:w-60 bg-white dark:bg-gray-900 h-full border-r border-gray-100 dark:border-gray-800 fixed lg:sticky top-0 z-10"
+            className="w-56 md:w-60 h-full border-r border-gray-100 dark:border-gray-800 fixed lg:sticky top-0 z-10 bg-white dark:bg-[rgb(23,23,23)]"
           >
             <div className="flex flex-col h-full">              {/* App Logo */}
               <div className="px-4 py-5">
@@ -127,8 +128,8 @@ export default function Layout() {
           </motion.aside>
         )}
       </AnimatePresence>
-        {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-white dark:bg-gray-900">
+      {/* Main Content */}
+      <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)]">
         <div className="px-4 py-6 md:px-10 md:py-8 lg:px-14 max-w-6xl mx-auto">
           <Outlet />
         </div>

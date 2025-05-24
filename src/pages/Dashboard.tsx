@@ -159,7 +159,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-2">
+    <div className="max-w-5xl mx-auto px-2 min-h-screen dark:bg-[rgb(23,23,23)] bg-white">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
         <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
@@ -174,14 +174,14 @@ export default function Dashboard() {
         </div>
       </div>
       {/* Search and Filters */}
-      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-8 flex-wrap">
+      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-8 flex-wrap dark:bg-[rgb(23,23,23)]">
         <div className="relative flex-grow max-w-lg mb-2 md:mb-0">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search entries..."
-            className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 border-none rounded-md focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 focus:bg-white dark:focus:bg-gray-700 transition-all"
+            className="w-full pl-9 pr-3 py-1.5 text-sm bg-gray-100 dark:bg-[rgb(23,23,23)] border-none rounded-md focus:ring-1 focus:ring-gray-300 dark:focus:ring-gray-600 focus:bg-white dark:focus:bg-[rgb(23,23,23)] transition-all text-gray-900 dark:text-gray-100"
           />
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search className="h-4 w-4 text-gray-500 dark:text-gray-400" />
@@ -203,8 +203,8 @@ export default function Dashboard() {
               onClick={() => setFilterMood(filterMood === mood ? null : mood)}
               className={`flex items-center px-3 py-1 text-xs rounded-full transition-colors ${
                 filterMood === mood 
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium' 
-                  : 'bg-gray-100 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-gray-200 dark:bg-[rgb(23,23,23)] text-gray-800 dark:text-gray-100 font-medium' 
+                  : 'bg-gray-100 dark:bg-[rgb(23,23,23)] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[rgb(23,23,23)]'
               }`}
             >
               <Smile className="h-3 w-3 mr-1.5" />
@@ -220,8 +220,8 @@ export default function Dashboard() {
               onClick={() => setFilterTag(filterTag === tag ? null : tag)}
               className={`flex items-center px-3 py-1 text-xs rounded-full transition-colors ${
                 filterTag === tag 
-                  ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-medium' 
-                  : 'bg-gray-100 dark:bg-gray-800/70 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                  ? 'bg-gray-200 dark:bg-[rgb(23,23,23)] text-gray-800 dark:text-gray-100 font-medium' 
+                  : 'bg-gray-100 dark:bg-[rgb(23,23,23)] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[rgb(23,23,23)]'
               }`}
             >
               <Tag className="h-3 w-3 mr-1.5" />
@@ -237,7 +237,7 @@ export default function Dashboard() {
               setFilterTag(null);
               setSearchQuery('');
             }}
-            className="flex items-center px-3 py-1 text-xs rounded-full bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors"
+            className="flex items-center px-3 py-1 text-xs rounded-full bg-red-50 dark:bg-[rgb(23,23,23)] text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-[rgb(23,23,23)] transition-colors"
           >
             <FilterX className="h-3 w-3 mr-1.5" />
             Clear all
@@ -246,7 +246,7 @@ export default function Dashboard() {
       </div>
       {/* No results message */}
       {entries.length === 0 && (filterMood || filterTag || searchQuery) && (
-        <div className="flex flex-col items-center justify-center py-16 text-center">
+        <div className="flex flex-col items-center justify-center py-16 text-center dark:bg-[rgb(23,23,23)]">
           <div className="text-gray-300 dark:text-gray-600 mb-6">
             <ArchiveX size={40} />
           </div>
@@ -272,7 +272,7 @@ export default function Dashboard() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 dark:bg-[rgb(23,23,23)]"
         >
           {entries.map((entry) => (
             <motion.div key={entry.id} variants={itemVariants}>
