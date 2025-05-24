@@ -5,15 +5,11 @@ import {
   BookMarked, 
   Plus, 
   LogOut, 
-  Settings, 
   Moon, 
   Sun, 
   Menu, 
   X,
-  Home,
-  Archive,
-  Star,
-  ChevronDown
+  Home
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -24,7 +20,7 @@ export default function Layout() {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);  const [showFavorites, setShowFavorites] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);  
 
   const handleLogout = async () => {
     await signOut();
@@ -99,71 +95,23 @@ export default function Layout() {
                     Home
                   </button>
                 </div>
-
-                {/* Favorites Section */}
-                <div className="mt-4">
-                  <button 
-                    onClick={() => setShowFavorites(!showFavorites)}
-                    className="flex items-center w-full py-2 px-2 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                  >
-                    <ChevronDown size={14} className={`mr-1 transition-transform ${showFavorites ? 'transform rotate-180' : ''}`} />
-                    <span className="uppercase tracking-wide font-medium">Favorites</span>
-                  </button>
-                  {showFavorites && (
-                    <div className="ml-3 mt-1">
-                      <div className="notion-sidebar-item group">
-                        <Star size={15} className="mr-2 text-yellow-500" />
-                        <span className="text-gray-800 dark:text-gray-300">Favorites</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Tags Section */}
-                <div className="mt-4">
-                  <button 
-                    className="flex items-center w-full py-2 px-2 text-xs text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                  >
-                    <ChevronDown size={14} className="mr-1" />
-                    <span className="uppercase tracking-wide font-medium">Tags</span>
-                  </button>
-                </div>
-
-                {/* Archives Section */}
-                <div className="mt-1">
-                  <div className="notion-sidebar-item group">
-                    <Archive size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
-                    <span className="text-gray-800 dark:text-gray-300">Archive</span>
-                  </div>
-                </div>
               </nav>
               
               {/* Footer */}
-              <div className="p-3 border-t border-gray-200 dark:border-gray-800">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
-                    <div className="w-7 h-7 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-xs font-medium text-gray-700 dark:text-gray-300 mr-2">
-                      {user?.email?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <div className="text-sm truncate max-w-[120px]">{user?.email}</div>
+              <div className="p-3 border-t border-gray-200 dark:border-gray-800 mt-auto">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-base font-medium text-gray-700 dark:text-gray-300">
+                    {user?.email?.charAt(0).toUpperCase() || 'U'}
                   </div>
+                  <div className="text-sm truncate max-w-[120px]">{user?.email}</div>
                 </div>
-                <div className="flex justify-between text-xs">
-                  <button 
-                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center"
-                    onClick={() => navigate('/settings')}
-                  >
-                    <Settings size={14} className="mr-1" />
-                    <span>Settings</span>
-                  </button>
-                  <button 
-                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 flex items-center"
-                    onClick={handleLogout}
-                  >
-                    <LogOut size={14} className="mr-1" />
-                    <span>Log Out</span>
-                  </button>
-                </div>
+                <button 
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition-colors mt-2"
+                  onClick={handleLogout}
+                >
+                  <LogOut size={16} />
+                  Log Out
+                </button>
               </div>
             </div>
           </motion.aside>
