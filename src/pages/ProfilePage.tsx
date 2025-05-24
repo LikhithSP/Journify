@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 // Add a hook to fetch the current user's profile (avatar, name) for sidebar use
 export function useProfileInfo(userId?: string) {
@@ -30,6 +32,7 @@ export function useProfileInfo(userId?: string) {
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [profile, setProfile] = useState({
     name: '',
     tagline: '',
@@ -112,15 +115,32 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-lg mx-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow">
+      <button
+        type="button"
+        className="mb-4 flex items-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+        onClick={() => navigate('/')}
+      >
+        <ArrowLeft className="w-5 h-5 mr-1" />
+        Back to Dashboard
+      </button>
       <h2 className="text-2xl font-bold mb-6">Profile</h2>
       <form onSubmit={handleSave} className="space-y-5">
         <div className="flex flex-col items-center mb-4">
-          <img
-            src={profile.avatar_url || '/journal.svg'}
-            alt="Profile"
-            className="w-24 h-24 rounded-full object-cover border mb-2"
-          />
-          <input type="file" accept="image/*" onChange={handleAvatarChange} className="text-xs" />
+          <label htmlFor="avatar-upload" className="cursor-pointer group">
+            <img
+              src={profile.avatar_url || '/journal.svg'}
+              alt="Profile"
+              className="w-24 h-24 rounded-full object-cover border mb-2 group-hover:opacity-80 transition-opacity"
+            />
+            <input
+              id="avatar-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+            />
+            <span className="block text-xs text-gray-400 group-hover:text-blue-500 text-center">Click to change</span>
+          </label>
         </div>
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>
