@@ -13,6 +13,7 @@ import EditEntryPage from './pages/EditEntryPage.tsx';
 import Layout from './components/Layout.tsx';
 import { supabase } from './lib/supabase';
 import ProfilePage from './pages/ProfilePage.tsx';
+import FolderDashboard from './pages/FolderDashboard';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -64,6 +65,7 @@ function App() {
                 <Route path="/entry/:id" element={<EntryPage />} />
                 <Route path="/entry/:id/edit" element={<EditEntryPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/folder/:folderId" element={<FolderDashboard />} />
               </Route>
             </Routes>
           </AnimatePresence>

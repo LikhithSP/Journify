@@ -10,7 +10,8 @@ import { supabase } from '../lib/supabase';
 import EmptyState from '../components/EmptyState';
 import NotionCard from '../components/NotionCard';
 
-export default function Dashboard() {
+// Add prop to pass drag state setter to NotionCard
+export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId?: (id: string | null) => void } = {}) {
   const { user } = useAuth();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
@@ -276,7 +277,7 @@ export default function Dashboard() {
         >
           {entries.map((entry) => (
             <motion.div key={entry.id} variants={itemVariants}>
-              <NotionCard entry={entry} viewType="grid" />
+              <NotionCard entry={entry} viewType="grid" draggable onDragStart={() => setDraggedJournalId && setDraggedJournalId(entry.id)} onDragEnd={() => setDraggedJournalId && setDraggedJournalId(null)} />
             </motion.div>
           ))}
         </motion.div>

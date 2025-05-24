@@ -28,7 +28,8 @@ CREATE TABLE journal_entries (
   is_private BOOLEAN DEFAULT TRUE,
   location JSONB DEFAULT NULL,
   weather JSONB DEFAULT NULL,
-  images TEXT[] DEFAULT '{}'
+  images TEXT[] DEFAULT '{}',
+  folder_id UUID REFERENCES folders(id)
 );
 
 -- Media table for storing entry attachments
@@ -53,6 +54,14 @@ CREATE TABLE tags (
   UNIQUE(user_id, name)
 );
 
+-- Folders table
+CREATE TABLE IF NOT EXISTS folders (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- RLS (Row Level Security) Policies
 
 -- Enable RLS on all tables
@@ -60,6 +69,7 @@ ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
 ALTER TABLE media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE folders ENABLE ROW LEVEL SECURITY;
 
 -- Profiles policies
 CREATE POLICY "Users can view their own profile"
@@ -116,6 +126,15 @@ CREATE POLICY "Users can update their own tags"
 CREATE POLICY "Users can delete their own tags"
   ON tags FOR DELETE
   USING (auth.uid() = user_id);
+
+-- Folders policies
+CREATE POLICY "Users can view their own folders"
+  ON folders FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own folders"
+  ON folders FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 
 -- Triggers for updated_at
 

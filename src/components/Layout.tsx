@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
@@ -7,13 +7,16 @@ import {
   LogOut, 
   Moon, 
   Sun, 
-  Menu,
-  Home
+  Home,
+  FolderPlus,
+  Folder
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfileInfo } from '../pages/ProfilePage';
+import { supabase } from '../lib/supabase';
+import Dashboard from '../pages/Dashboard';
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -22,15 +25,52 @@ export default function Layout() {
   const { signOut, user } = useAuth();
   const profile = useProfileInfo(user?.id);
   const [sidebarOpen, setSidebarOpen] = useState(true);  
+  const [folders, setFolders] = useState<{ id: string; name: string }[]>([]);
+  const [showFolderInput, setShowFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  // Drag and drop state for journal id
+  const [draggedJournalId, setDraggedJournalId] = useState<string | null>(null);
+
+  // Fetch folders from Supabase
+  useEffect(() => {
+    async function fetchFolders() {
+      if (!user) return;
+      const { data } = await supabase
+        .from('folders')
+        .select('id, name')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true });
+      if (data) setFolders(data);
+    }
+    fetchFolders();
+  }, [user]);
+
+  // Add folder to Supabase
+  const handleAddFolder = async () => {
+    if (newFolderName.trim() && user) {
+      const { data, error } = await supabase
+        .from('folders')
+        .insert([{ name: newFolderName.trim(), user_id: user.id }])
+        .select('id, name')
+        .single();
+      if (!error && data) {
+        setFolders([...folders, data]);
+        setNewFolderName('');
+        setShowFolderInput(false);
+      }
+    }
+  };
+
+  // Add folder click handler
+  const handleFolderClick = (folderId: string) => {
+    navigate(`/folder/${folderId}`);
+  };
 
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
   };
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
   
   const isActive = (path: string) => {
     return location.pathname === path;
@@ -111,6 +151,67 @@ export default function Layout() {
                     Home
                   </button>
                 </div>
+                {/* Folders Section */}
+                <div className="mt-2 px-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Folders</span>
+                    <button
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700"
+                      onClick={() => setShowFolderInput((v) => !v)}
+                      title="Add Folder"
+                      type="button"
+                    >
+                      <FolderPlus size={16} />
+                    </button>
+                  </div>
+                  {showFolderInput && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <input
+                        type="text"
+                        className="flex-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-xs text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700"
+                        placeholder="Folder name"
+                        value={newFolderName}
+                        onChange={e => setNewFolderName(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') handleAddFolder(); }}
+                        autoFocus
+                      />
+                      <button
+                        className="px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs font-medium hover:opacity-90"
+                        onClick={handleAddFolder}
+                        type="button"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
+                  <div className="space-y-1">
+                    {folders.map(folder => (
+                      <div
+                        key={folder.id}
+                        className="flex items-center gap-2 px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm text-gray-700 dark:text-gray-200"
+                        onClick={() => handleFolderClick(folder.id)}
+                        onDragOver={e => { e.preventDefault(); }}
+                        onDrop={async e => {
+                          e.preventDefault();
+                          if (draggedJournalId) {
+                            // Move journal to this folder in Supabase
+                            await supabase
+                              .from('journal_entries')
+                              .update({ folder_id: folder.id })
+                              .eq('id', draggedJournalId)
+                              .eq('user_id', user.id);
+                            setDraggedJournalId(null);
+                            // Optionally: refresh dashboard/folder view here
+                          }
+                        }}
+                        style={{ minHeight: 36 }}
+                      >
+                        <Folder size={15} className="text-gray-400 dark:text-gray-300" />
+                        <span>{folder.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </nav>
               
               {/* Footer */}
@@ -151,7 +252,7 @@ export default function Layout() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)]">
         <div className="px-4 py-6 md:px-10 md:py-8 lg:px-14 max-w-6xl mx-auto">
-          <Outlet />
+          {location.pathname === '/' ? <Dashboard setDraggedJournalId={setDraggedJournalId} /> : <Outlet />}
         </div>
       </main>
     </div>
