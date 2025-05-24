@@ -81,7 +81,7 @@ export default function Layout() {
                 {/* Quick Actions */}                <div className="mb-5 px-3">
                   <button 
                     onClick={() => navigate('/entry/new')}
-                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm font-medium text-black dark:text-white bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 mb-2 transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm font-medium text-black dark:text-white bg-gray-100 dark:bg-[rgb(44,44,44)] hover:bg-gray-200 dark:hover:bg-[rgb(60,60,60)] mb-2 transition-colors"
                   >
                     <div className="flex items-center">
                       <Plus size={15} className="mr-2" />
@@ -89,7 +89,7 @@ export default function Layout() {
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">⌘N</span>
                   </button>
-                </div>                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/') ? 'bg-gray-100 dark:bg-gray-800 font-medium' : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300'}`}>
+                </div>                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
                   <Home size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
                   <button 
                     onClick={() => navigate('/')}
@@ -103,7 +103,7 @@ export default function Layout() {
               {/* Footer */}
               <div className="p-3 border-t border-gray-200 dark:border-gray-800 mt-auto">
                 <button
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 mb-3"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-[rgb(44,44,44)] hover:bg-gray-200 dark:hover:bg-[rgb(60,60,60)] mb-3 transition-colors"
                   onClick={() => navigate('/profile')}
                 >
                   <img
