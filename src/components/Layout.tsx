@@ -7,8 +7,7 @@ import {
   LogOut, 
   Moon, 
   Sun, 
-  Menu, 
-  X,
+  Menu,
   Home
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -37,25 +36,35 @@ export default function Layout() {
     return location.pathname === path;
   };
 
+  const isDashboard = location.pathname === '/';
+
   return (
     <div className="flex h-screen w-screen bg-white dark:bg-[rgb(23,23,23)]">
-      {/* Theme Toggle Button (top right, fixed) */}
-      <button
-        onClick={toggleTheme}
-        className="fixed top-4 right-4 z-50 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-      >
-        {theme === 'dark' ? <Sun size={16} className="text-gray-300" /> : <Moon size={16} className="text-gray-700" />}
-      </button>
-      {/* Mobile Menu Toggle */}
-      <div className="lg:hidden fixed top-4 left-4 z-20">
-        <button 
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur shadow-sm border border-gray-200 dark:border-gray-700"
+      {/* Theme Toggle Button (top right, fixed) - only on dashboard */}
+      {isDashboard && (
+        <button
+          onClick={toggleTheme}
+          className="fixed top-4 right-4 z-50 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
-          {sidebarOpen ? <X size={18} /> : <Menu size={18} />}
+          {theme === 'dark' ? <Sun size={16} className="text-gray-300" /> : <Moon size={16} className="text-gray-700" />}
         </button>
-      </div>
+      )}
+      {/* Mobile Menu Toggle (Hamburger) - only on dashboard */}
+      {isDashboard && (
+        <div className="lg:hidden fixed top-4 left-4 z-20">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur shadow-sm border border-gray-200 dark:border-gray-700"
+            aria-label="Open sidebar menu"
+          >
+            {/* Hamburger icon: 3 lines */}
+            <span className="block w-6 h-0.5 bg-gray-800 dark:bg-gray-200 mb-1"></span>
+            <span className="block w-6 h-0.5 bg-gray-800 dark:bg-gray-200 mb-1"></span>
+            <span className="block w-6 h-0.5 bg-gray-800 dark:bg-gray-200"></span>
+          </button>
+        </div>
+      )}
       
       {/* Sidebar */}
       <AnimatePresence mode="wait">
@@ -66,6 +75,10 @@ export default function Layout() {
             exit={{ x: -280 }}
             transition={{ duration: 0.2 }}
             className="w-56 md:w-60 h-full border-r border-gray-100 dark:border-gray-800 fixed lg:sticky top-0 z-10 bg-white dark:bg-[rgb(23,23,23)]"
+            onClick={(e) => {
+              // Prevent closing when clicking inside the sidebar
+              e.stopPropagation();
+            }}
           >
             <div className="flex flex-col h-full">              {/* App Logo */}
               <div className="px-4 py-5">
@@ -128,6 +141,13 @@ export default function Layout() {
           </motion.aside>
         )}
       </AnimatePresence>
+      {/* Overlay for mobile sidebar, closes sidebar on click (only on mobile) */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-5 bg-black/30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)]">
         <div className="px-4 py-6 md:px-10 md:py-8 lg:px-14 max-w-6xl mx-auto">
