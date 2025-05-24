@@ -9,21 +9,21 @@ export default function FolderDashboard() {
   const { folderId } = useParams<{ folderId: string }>();
   const { user } = useAuth();
   const [entries, setEntries] = useState<any[]>([]);
-  const [folderName, setFolderName] = useState('');
+  const [folderName, setFolderName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let ignore = false;
     async function fetchFolderAndEntries() {
       if (!user || !folderId) return;
-      setLoading(true);
-      // Fetch folder name
+      // Fetch folder name first, show instantly
       const { data: folder } = await supabase
         .from('folders')
         .select('name')
         .eq('id', folderId)
         .eq('user_id', user.id)
         .single();
-      setFolderName(folder?.name || '');
+      if (!ignore) setFolderName(folder?.name || '');
       // Fetch entries in this folder
       const { data: entriesData } = await supabase
         .from('journal_entries')
@@ -31,16 +31,20 @@ export default function FolderDashboard() {
         .eq('user_id', user.id)
         .eq('folder_id', folderId)
         .order('created_at', { ascending: false });
-      setEntries(entriesData || []);
-      setLoading(false);
+      if (!ignore) {
+        setEntries(entriesData || []);
+        setLoading(false);
+      }
     }
+    setLoading(true);
     fetchFolderAndEntries();
+    return () => { ignore = true; };
   }, [user, folderId]);
 
   return (
     <div className="max-w-5xl mx-auto px-2 min-h-screen dark:bg-[rgb(23,23,23)] bg-white">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
-        <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">{folderName || 'Folder'}</h1>
+        <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">{folderName ?? ''}</h1>
       </div>
       {loading ? (
         <div className="text-center text-gray-400 dark:text-gray-500 py-20">Loading...</div>
