@@ -193,7 +193,7 @@ export default function Layout() {
                         onDragOver={e => { e.preventDefault(); }}
                         onDrop={async e => {
                           e.preventDefault();
-                          if (draggedJournalId) {
+                          if (draggedJournalId && user) {
                             // Move journal to this folder in Supabase
                             await supabase
                               .from('journal_entries')

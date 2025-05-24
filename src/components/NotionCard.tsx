@@ -38,7 +38,7 @@ export default function NotionCard({ entry, viewType, draggable, onDragStart, on
   }
   
   return (
-    <Link to={`/entry/${entry.id}`} className="block group" draggable={draggable} onDragStart={e => { if (onDragStart) onDragStart(); }} onDragEnd={e => { if (onDragEnd) onDragEnd(); }}>
+    <Link to={`/entry/${entry.id}`} className="block group" draggable={draggable} onDragStart={() => { if (onDragStart) onDragStart(); }} onDragEnd={() => { if (onDragEnd) onDragEnd(); }}>
       <div className={`notion-card rounded-xl overflow-hidden shadow-lg bg-gray-50 dark:bg-[rgb(44,44,44)] border border-gray-200 dark:border-gray-700 transition-transform hover:scale-[1.025] hover:shadow-xl duration-150 ${viewType === 'list' ? 'flex items-start' : ''}`}
         style={{ minHeight: viewType === 'grid' ? 220 : undefined }}
       >
