@@ -3,75 +3,67 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
-  Star, Clock, Plus, Calendar, Tag, SortAsc, SortDesc,
-  Wifi, WifiOff, RefreshCw, Search, X, Smile, ArchiveX, FilterX
+  Star, Plus, Calendar, Tag, ArchiveX, FilterX, Smile, Wifi, WifiOff, RefreshCw, Search, X
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync';
+import { supabase } from '../lib/supabase';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { 
-    isOnline, 
-    isSyncing, 
-    pendingOperationsCount,
-    fetchEntries,
-    syncPendingOperations
-  } = useOfflineSync();
   
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
   const [filterMood, setFilterMood] = useState<string | null>(null);
   const [filterTag, setFilterTag] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadEntries() {
       if (!user) return;
 
+      setLoading(true);
       try {
-        setLoading(true);
-        const { data, error } = await fetchEntries();
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
         
         if (error) throw error;
         
-        // Store all entries for filtering
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-          setAllEntries([]);
-        } else if (Array.isArray(data)) {
-          setAllEntries(data);
-          // Extract all unique tags for filtering
-          const tags = new Set<string>();
-          data.forEach((entry: JournalEntry) => {
-            if (entry.tags && entry.tags.length > 0) {
-              entry.tags.forEach((tag: string) => tags.add(tag));
-            }
-          });
-          setAvailableTags(Array.from(tags).sort());
-        } else {
-          setAllEntries([data]);
-          const tags = new Set<string>();
-          if (data.tags && data.tags.length > 0) {
-            data.tags.forEach((tag: string) => tags.add(tag));
+        const journalEntries = data as JournalEntry[];
+        setAllEntries(journalEntries);
+        
+        // Extract all unique tags for filtering
+        const tags = new Set<string>();
+        journalEntries.forEach(entry => {
+          if (entry.tags && entry.tags.length > 0) {
+            entry.tags.forEach((tag: string) => tags.add(tag));
           }
-          setAvailableTags(Array.from(tags).sort());
-        }
+        });
+        setAvailableTags(Array.from(tags).sort());
         
       } catch (error) {
         console.error('Error fetching journal entries:', error);
-        setError('Failed to load your journal entries. Please try again later.');
       } finally {
         setLoading(false);
       }
     }
 
     loadEntries();
-  }, [user, fetchEntries]);
+  }, [user]);
+  
+  // Compute available moods from allEntries
+  const availableMoods = useMemo(() => {
+    const moods = new Set<string>();
+    allEntries.forEach(entry => {
+      if (entry.mood) moods.add(entry.mood);
+    });
+    return Array.from(moods);
+  }, [allEntries]);
   
   // Filter and sort entries based on filters
   const filteredEntries = useMemo(() => {
@@ -99,24 +91,13 @@ export default function Dashboard() {
       );
     }
     
-    // Apply sorting
-    filteredData.sort((a, b) => {
-      const dateA = new Date(a.created_at).getTime();
-      const dateB = new Date(b.created_at).getTime();
-      return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-    });
-    
     return filteredData;
-  }, [allEntries, searchQuery, filterMood, filterTag, sortOrder]);
+  }, [allEntries, searchQuery, filterMood, filterTag]);
   
   // Update entries whenever filters change
   useEffect(() => {
     setEntries(filteredEntries);
   }, [filteredEntries]);
-
-  const toggleSortOrder = () => {
-    setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc');
-  };
 
   // Animation variants for list items
   const containerVariants = {
@@ -145,26 +126,6 @@ export default function Dashboard() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full">
-        <div className="text-red-600 dark:text-red-400 mb-4">
-          <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <p className="text-lg font-medium mb-2">Oops! Something went wrong</p>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="btn btn-primary"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
-
   if (allEntries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh]">
@@ -184,9 +145,53 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4">
-        <div className="relative w-full md:w-96 mb-4 md:mb-0">
+    <div className="max-w-5xl mx-auto px-2">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
+        <h1 className="text-3xl font-title font-bold mr-3">Your Journal</h1>
+        <div className="flex items-center space-x-3 flex-wrap gap-2">
+          {/* Online/Offline Status */}
+          {true ? (
+            <div className="flex items-center text-xs text-green-600 dark:text-green-400">
+              <Wifi size={14} className="mr-1" />
+              <span>Online</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-xs text-yellow-600 dark:text-yellow-400">
+              <WifiOff size={14} className="mr-1" />
+              <span>Offline</span>
+              {0 > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
+                  {0}
+                </span>
+              )}
+            </div>
+          )}
+          {/* Sync button */}
+          {true && 0 > 0 && (
+            <button 
+              onClick={() => {}}
+              disabled={false}
+              className="p-2 rounded-md bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300"
+              title="Sync pending changes"
+            >
+              <RefreshCw size={18} className={false ? "animate-spin" : ""} />
+            </button>
+          )}
+          <div className="flex items-center">
+          </div>
+          <Link
+            to="/entry/new"
+            className="btn btn-primary flex items-center"
+          >
+            <Plus size={16} className="mr-2" />
+            <span>New Entry</span>
+          </Link>
+        </div>
+      </div>
+      {/* Search and Filters */}
+      <div className="flex flex-col md:flex-row md:items-center gap-3 mb-8 flex-wrap">
+        <div className="relative flex-grow max-w-lg mb-2 md:mb-0">
           <input
             type="text"
             value={searchQuery}
@@ -206,159 +211,41 @@ export default function Dashboard() {
             </button>
           )}
         </div>
-      </div>
-      
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center">
-          <h1 className="text-3xl font-title font-bold mr-3">Your Journal</h1>
-          {/* Online/Offline Status */}
-          {isOnline ? (
-            <div className="flex items-center text-xs text-green-600 dark:text-green-400">
-              <Wifi size={14} className="mr-1" />
-              <span>Online</span>
-            </div>
-          ) : (
-            <div className="flex items-center text-xs text-yellow-600 dark:text-yellow-400">
-              <WifiOff size={14} className="mr-1" />
-              <span>Offline</span>
-              {pendingOperationsCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-yellow-100 dark:bg-yellow-900/30 rounded-full">
-                  {pendingOperationsCount}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-        <div className="flex items-center space-x-2">
-          {/* Sync button */}
-          {isOnline && pendingOperationsCount > 0 && (
-            <button 
-              onClick={() => syncPendingOperations()}
-              disabled={isSyncing}
-              className="p-2 rounded-md bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300"
-              title="Sync pending changes"
+        {/* Mood filters */}
+        <div className="flex flex-wrap gap-2">
+          {availableMoods.map((mood) => (
+            <button
+              key={mood}
+              onClick={() => setFilterMood(filterMood === mood ? null : mood)}
+              className={`flex items-center px-2 py-1 text-xs rounded-full 
+                ${filterMood === mood 
+                  ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700' 
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                }`}
             >
-              <RefreshCw size={18} className={isSyncing ? "animate-spin" : ""} />
+              <Smile className="h-3 w-3 mr-1" />
+              {mood.charAt(0).toUpperCase() + mood.slice(1)}
             </button>
-          )}
-          <div className="flex items-center">
-            <button 
-              onClick={toggleSortOrder}
-              className="p-2 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 mr-1"
-              title={sortOrder === 'desc' ? 'Newest first' : 'Oldest first'}
-            >
-              {sortOrder === 'desc' ? <SortDesc size={18} /> : <SortAsc size={18} />}
-            </button>
-          </div>
-          <Link
-            to="/entry/new"
-            className="btn btn-primary flex items-center"
-          >
-            <Plus size={16} className="mr-2" />
-            <span>New Entry</span>
-          </Link>
+          ))}
         </div>
-      </div>
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="card p-4 flex items-center">
-          <div className="rounded-full bg-blue-100 dark:bg-blue-900/20 p-3 mr-4">
-            <Calendar size={20} className="text-blue-600 dark:text-blue-400" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Total Entries</p>
-            <p className="text-2xl font-semibold">{allEntries.length}</p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center">
-          <div className="rounded-full bg-green-100 dark:bg-green-900/20 p-3 mr-4">
-            <Star size={20} className="text-green-600 dark:text-green-400" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Favorites</p>
-            <p className="text-2xl font-semibold">
-              {allEntries.filter(entry => entry.is_favorite).length}
-            </p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center">
-          <div className="rounded-full bg-purple-100 dark:bg-purple-900/20 p-3 mr-4">
-            <Tag size={20} className="text-purple-600 dark:text-purple-400" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Tags Used</p>
-            <p className="text-2xl font-semibold">
-              {availableTags.length}
-            </p>
-          </div>
-        </div>
-        <div className="card p-4 flex items-center">
-          <div className="rounded-full bg-amber-100 dark:bg-amber-900/20 p-3 mr-4">
-            <Clock size={20} className="text-amber-600 dark:text-amber-400" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">This Week</p>
-            <p className="text-2xl font-semibold">
-              {allEntries.filter(entry => {
-                // Check if entry was created in the last 7 days
-                const createdAt = new Date(entry.created_at);
-                const now = new Date();
-                const diffTime = Math.abs(now.getTime() - createdAt.getTime());
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                return diffDays <= 7;
-              }).length}
-            </p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-6">
-        <div className="mr-2">
-          <span className="text-sm text-gray-500 dark:text-gray-400">Mood:</span>
-        </div>
-        
-        {['joyful', 'peaceful', 'sad', 'angry', 'anxious'].map((mood) => (
-          <button
-            key={mood}
-            onClick={() => setFilterMood(filterMood === mood ? null : mood)}
-            className={`flex items-center px-2 py-1 text-xs rounded-full 
-              ${filterMood === mood 
-                ? 'bg-primary-100 dark:bg-primary-900 text-primary-800 dark:text-primary-200 border border-primary-300 dark:border-primary-700' 
-                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+        {/* Tag filters */}
+        <div className="flex flex-wrap gap-2">
+          {availableTags.length > 0 && availableTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setFilterTag(filterTag === tag ? null : tag)}
+              className={`flex items-center px-2 py-1 text-xs rounded-full ${
+                filterTag === tag 
+                  ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700' 
+                  : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
               }`}
-          >
-            <Smile className="h-3 w-3 mr-1" />
-            {mood.charAt(0).toUpperCase() + mood.slice(1)}
-          </button>
-        ))}
-        
-        {availableTags.length > 0 && (
-          <>
-            <div className="ml-4 mr-2">
-              <span className="text-sm text-gray-500 dark:text-gray-400">Tag:</span>
-            </div>
-            
-            <div className="flex flex-wrap gap-2">
-              {availableTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-                  className={`flex items-center px-2 py-1 text-xs rounded-full 
-                    ${filterTag === tag 
-                      ? 'bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 border border-indigo-300 dark:border-indigo-700' 
-                      : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                    }`}
-                >
-                  <Tag className="h-3 w-3 mr-1" />
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </>
-        )}
-        
+            >
+              <Tag className="h-3 w-3 mr-1" />
+              {tag}
+            </button>
+          ))}
+        </div>
+        {/* Clear filters */}
         {(filterMood || filterTag || searchQuery) && (
           <button
             onClick={() => {
@@ -373,7 +260,6 @@ export default function Dashboard() {
           </button>
         )}
       </div>
-
       {/* No results message */}
       {entries.length === 0 && (filterMood || filterTag || searchQuery) && (
         <div className="flex flex-col items-center justify-center py-12">
@@ -396,7 +282,6 @@ export default function Dashboard() {
           </button>
         </div>
       )}
-
       {/* Journal Entries List */}
       {entries.length > 0 && (
         <motion.div 
@@ -447,12 +332,12 @@ export default function Dashboard() {
   );
 }
 
-// Simple SVG placeholder for empty state
+// Add BookPlaceholder definition for empty state
 function BookPlaceholder({ className = "w-6 h-6" }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
     </svg>
-  )
+  );
 }

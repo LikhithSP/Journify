@@ -5,13 +5,12 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Edit, Star, Calendar, Clock } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync.fixed';
+import { supabase } from '../lib/supabase';
 
 export default function EntryPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { fetchEntries, deleteEntry, updateEntry } = useOfflineSync();
   const [entry, setEntry] = useState<JournalEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -21,11 +20,15 @@ export default function EntryPage() {
       if (!id || !user) return;
 
       try {
-        // Get the single entry by ID
-        const { data, error } = await fetchEntries(id);
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
 
         if (error) {
-          throw new Error(`Error fetching entry: ${error.message}`);
+          throw error;
         }
 
         if (!data) {
@@ -39,16 +42,19 @@ export default function EntryPage() {
       }
     }
 
-    fetchEntry();
-  }, [id, user, fetchEntries]);
+    if (user) fetchEntry();
+  }, [id, user]);
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
-      return;
-    }
+    if (!user) return;
+    if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) return;
 
     try {
       setIsDeleting(true);
-      const { error } = await deleteEntry(id!);
+      const { error } = await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;
@@ -62,7 +68,7 @@ export default function EntryPage() {
     }
   };
   const toggleFavorite = async () => {
-    if (!entry) return;
+    if (!entry || !user) return;
     
     try {
       const updatedIsFavorite = !entry.is_favorite;
@@ -74,7 +80,11 @@ export default function EntryPage() {
       });
       
       // Update in database
-      const { error } = await updateEntry(entry.id, { is_favorite: updatedIsFavorite });
+      const { error } = await supabase
+        .from('journal_entries')
+        .update({ is_favorite: updatedIsFavorite })
+        .eq('id', entry.id)
+        .eq('user_id', user.id);
         
       if (error) {
         // Revert on error

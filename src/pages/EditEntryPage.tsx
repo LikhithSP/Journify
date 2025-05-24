@@ -17,14 +17,12 @@ import Color from '@tiptap/extension-color';
 import { ArrowLeft, Bold, Italic, List, Heading1, Heading2, Code, Image as ImageIcon, CheckSquare, Smile, Tag, Loader } from 'lucide-react';
 import type { JournalEntry, JournalEntryFormData } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync';
 import { supabase } from '../lib/supabase';
 
 export default function EditEntryPage() {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
-  const { updateEntry, isOnline } = useOfflineSync();
   
   const [entry, setEntry] = useState<JournalEntry | null>(null);
   const [title, setTitle] = useState<string>('');
@@ -69,45 +67,26 @@ export default function EditEntryPage() {
       try {
         setLoading(true);
         
-        // Try to get from local storage first when offline
-        let entryData: JournalEntry | null = null;
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
         
-        if (!isOnline) {
-          const localEntries = localStorage.getItem('offlineEntries');
-          if (localEntries) {
-            const entries = JSON.parse(localEntries) as JournalEntry[];
-            entryData = entries.find(e => e.id === id) || null;
-          }
-        }
+        if (error) throw error;
+        if (!data) throw new Error('Entry not found');
         
-        // If not found locally or online, fetch from Supabase
-        if (!entryData && isOnline) {
-          const { data, error } = await supabase
-            .from('journal_entries')
-            .select('*')
-            .eq('id', id)
-            .eq('user_id', user.id)
-            .single();
-          
-          if (error) throw error;
-          entryData = data;
-        }
-        
-        if (!entryData) {
-          throw new Error('Entry not found');
-        }
-        
-        // Populate form fields
-        setEntry(entryData);
-        setTitle(entryData.title);
-        setMood(entryData.mood || null);
-        setTags(entryData.tags || []);
-        setIsFavorite(entryData.is_favorite);
-        setIsPrivate(entryData.is_private);
+        setEntry(data);
+        setTitle(data.title);
+        setMood(data.mood || null);
+        setTags(data.tags || []);
+        setIsFavorite(data.is_favorite);
+        setIsPrivate(data.is_private);
         
         // Set editor content
         if (editor) {
-          editor.commands.setContent(entryData.content);
+          editor.commands.setContent(data.content);
         }
         
       } catch (err) {
@@ -119,7 +98,7 @@ export default function EditEntryPage() {
     }
     
     fetchEntry();
-  }, [id, user, isOnline, editor]);
+  }, [id, user, editor]);
   
   const handleAddTag = () => {
     if (!tagInput.trim()) return;
@@ -159,7 +138,11 @@ export default function EditEntryPage() {
         is_private: isPrivate,
       };
       
-      const { error } = await updateEntry(id, updatedEntry);
+      const { error } = await supabase
+        .from('journal_entries')
+        .update(updatedEntry)
+        .eq('id', id)
+        .eq('user_id', user.id);
       
       if (error) throw error;
       
