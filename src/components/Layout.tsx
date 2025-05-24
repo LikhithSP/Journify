@@ -14,12 +14,14 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfileInfo } from '../pages/ProfilePage';
 
 export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { signOut, user } = useAuth();
+  const profile = useProfileInfo(user?.id);
   const [sidebarOpen, setSidebarOpen] = useState(true);  
 
   const handleLogout = async () => {
@@ -99,14 +101,22 @@ export default function Layout() {
               
               {/* Footer */}
               <div className="p-3 border-t border-gray-200 dark:border-gray-800 mt-auto">
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center text-base font-medium text-gray-700 dark:text-gray-300">
-                    {user?.email?.charAt(0).toUpperCase() || 'U'}
+                <button
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 mb-3"
+                  onClick={() => navigate('/profile')}
+                >
+                  <img
+                    src={profile?.avatar_url || '/journal.svg'}
+                    alt="Profile"
+                    className="w-7 h-7 rounded-full object-cover border"
+                  />
+                  <div className="flex flex-col items-start">
+                    <span className="font-semibold">{profile?.name || user?.email?.split('@')[0] || 'Profile'}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Profile</span>
                   </div>
-                  <div className="text-sm truncate max-w-[120px]">{user?.email}</div>
-                </div>
+                </button>
                 <button 
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition-colors mt-2"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition-colors"
                   onClick={handleLogout}
                 >
                   <LogOut size={16} />

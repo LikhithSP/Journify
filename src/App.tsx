@@ -12,6 +12,7 @@ import NewEntryPage from './pages/NewEntryPage.tsx';
 import EditEntryPage from './pages/EditEntryPage.tsx';
 import Layout from './components/Layout.tsx';
 import { supabase } from './lib/supabase';
+import ProfilePage from './pages/ProfilePage.tsx';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -62,6 +63,7 @@ function App() {
                 <Route path="/entry/new" element={<NewEntryPage />} />
                 <Route path="/entry/:id" element={<EntryPage />} />
                 <Route path="/entry/:id/edit" element={<EditEntryPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
               </Route>
             </Routes>
           </AnimatePresence>
