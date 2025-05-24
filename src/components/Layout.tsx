@@ -81,10 +81,9 @@ export default function Layout() {
   return (
     <div className="flex h-screen w-screen bg-white dark:bg-[rgb(23,23,23)]">
       {/* Theme Toggle Button (top right, fixed) - only on dashboard */}
-      {isDashboard && (
-        <button
+      {isDashboard && (        <button
           onClick={toggleTheme}
-          className="fixed top-4 right-4 z-50 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="fixed top-4 right-16 z-50 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           {theme === 'dark' ? <Sun size={16} className="text-gray-300" /> : <Moon size={16} className="text-gray-700" />}
