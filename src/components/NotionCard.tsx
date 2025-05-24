@@ -19,13 +19,20 @@ export default function NotionCard({ entry, viewType }: NotionCardProps) {
 
   const moodEmoji = entry.mood ? moodEmojis[entry.mood as keyof typeof moodEmojis] || '📝' : '📝';
   
-  // Pick a random cover image from the provided URLs if no image is present
+  // Deterministically pick a fallback image based on entry id
   const fallbackImages = [
     'https://haystudio.space/wp-content/uploads/2020/08/120Cover203-scaled.jpg',
     'https://i.pinimg.com/736x/b3/d3/f4/b3d3f45a63ce53889454de86c9fea9d0.jpg',
     'https://shopee.sg/blog/wp-content/uploads/2019/01/bullet-journal-ideas-bujo.jpg',
   ];
-  const randomFallback = fallbackImages[Math.floor(Math.random() * fallbackImages.length)];
+  function getDeterministicFallback(id: string) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      hash = ((hash << 5) - hash) + id.charCodeAt(i);
+      hash |= 0;
+    }
+    return fallbackImages[Math.abs(hash) % fallbackImages.length];
+  }
   
   return (
     <Link to={`/entry/${entry.id}`} className="block group">
@@ -40,7 +47,7 @@ export default function NotionCard({ entry, viewType }: NotionCardProps) {
           />
         ) : (
           <img
-            src={randomFallback}
+            src={getDeterministicFallback(entry.id)}
             alt="Journal cover"
             className="w-full h-32 object-cover object-center border-b border-gray-200 dark:border-gray-700 bg-gray-200 dark:bg-gray-700"
           />
