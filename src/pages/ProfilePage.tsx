@@ -46,7 +46,7 @@ export default function ProfilePage() {
   useEffect(() => {
     async function fetchProfile() {
       if (!user || !user.id || !user.email) return;
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
