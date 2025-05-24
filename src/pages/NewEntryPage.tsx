@@ -15,9 +15,9 @@ import TaskItem from '@tiptap/extension-task-item';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
 import { ArrowLeft, Bold, Italic, List, Heading1, Heading2, Code, Image as ImageIcon, CheckSquare, Smile, Tag } from 'lucide-react';
-import type { JournalEntryFormData } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync';
+import { supabase } from '../lib/supabase';
+import type { JournalEntryFormData } from '../types/journal';
 
 export default function NewEntryPage() {
   const navigate = useNavigate();
@@ -64,22 +64,20 @@ export default function NewEntryPage() {
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
-  // Import useOfflineSync at the top of the file
-  const { createEntry } = useOfflineSync();
 
   const handleSave = async () => {
     if (!user) {
-      setError("User authentication is required");
+      setError('User authentication is required');
       return;
     }
 
     if (!title.trim()) {
-      setError("Title is required");
+      setError('Title is required');
       return;
     }
 
     if (!editor?.getHTML() || editor.getHTML() === '<p></p>') {
-      setError("Entry content is required");
+      setError('Entry content is required');
       return;
     }
 
@@ -96,11 +94,13 @@ export default function NewEntryPage() {
         is_private: isPrivate,
       };
 
-      const { data, error } = await createEntry(newEntry);
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .insert([{ ...newEntry, user_id: user.id }])
+        .select()
+        .single();
 
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       // Navigate to the appropriate page
       if (data) {
@@ -109,7 +109,6 @@ export default function NewEntryPage() {
         navigate('/');
       }
     } catch (error) {
-      console.error(error);
       setError(error instanceof Error ? error.message : 'Failed to save entry');
       setSaving(false);
     }

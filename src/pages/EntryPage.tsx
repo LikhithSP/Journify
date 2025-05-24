@@ -5,13 +5,12 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Trash2, Edit, Star, Calendar, Clock } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { useOfflineSync } from '../hooks/useOfflineSync';
+import { supabase } from '../lib/supabase';
 
 export default function EntryPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { fetchEntries, deleteEntry, updateEntry } = useOfflineSync();
   const [entry, setEntry] = useState<JournalEntry | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -21,37 +20,41 @@ export default function EntryPage() {
       if (!id || !user) return;
 
       try {
-        // Get all entries (cached or from API)
-        const { data, error } = await fetchEntries();
+        const { data, error } = await supabase
+          .from('journal_entries')
+          .select('*')
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .single();
 
         if (error) {
-          throw new Error(`Error fetching entries: ${error.message}`);
+          throw error;
         }
 
-        // Find the requested entry
-        const foundEntry = data.find(entry => entry.id === id);
-        
-        if (!foundEntry) {
+        if (!data) {
           throw new Error('Entry not found');
         }
 
-        setEntry(foundEntry);
+        setEntry(data as JournalEntry);
       } catch (error) {
         console.error(error);
         setError(error instanceof Error ? error.message : 'An unexpected error occurred');
       }
     }
 
-    fetchEntry();
-  }, [id, user, fetchEntries]);
+    if (user) fetchEntry();
+  }, [id, user]);
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) {
-      return;
-    }
+    if (!user) return;
+    if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) return;
 
     try {
       setIsDeleting(true);
-      const { error } = await deleteEntry(id!);
+      const { error } = await supabase
+        .from('journal_entries')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
 
       if (error) {
         throw error;
@@ -65,7 +68,7 @@ export default function EntryPage() {
     }
   };
   const toggleFavorite = async () => {
-    if (!entry) return;
+    if (!entry || !user) return;
     
     try {
       const updatedIsFavorite = !entry.is_favorite;
@@ -77,7 +80,11 @@ export default function EntryPage() {
       });
       
       // Update in database
-      const { error } = await updateEntry(entry.id, { is_favorite: updatedIsFavorite });
+      const { error } = await supabase
+        .from('journal_entries')
+        .update({ is_favorite: updatedIsFavorite })
+        .eq('id', entry.id)
+        .eq('user_id', user.id);
         
       if (error) {
         // Revert on error
@@ -92,7 +99,6 @@ export default function EntryPage() {
       setError(error instanceof Error ? error.message : 'Failed to update favorite status');
     }
   };
-
   if (error) {
     return (
       <div className="max-w-4xl mx-auto">

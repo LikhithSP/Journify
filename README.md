@@ -11,6 +11,21 @@ Journify is a modern, sleek daily journaling web app designed to provide a distr
 - 📊 **Analytics** - View insights and stats about your journaling habits
 - 🔄 **Offline Support** - Write entries even without an internet connection
 - 🔒 **Secure** - End-to-end encryption and privacy-focused design with Supabase
+- ⚡ **High Performance** - Optimized loading and caching for fast journal viewing
+
+## Recent Performance Improvements
+
+We've significantly improved the journal entry loading performance:
+
+- **Individual Entry Caching** - Entries are now cached individually for faster access
+- **Single Entry Fetching** - When viewing a specific entry, we fetch only that entry instead of all entries
+- **Optimized Data Storage** - More efficient deduplication and data management
+
+To implement these improvements:
+
+1. Replace `src/hooks/useOfflineSync.ts` with `src/hooks/useOfflineSync.fixed.ts`
+2. Update the imports in your components from `useOfflineSync` to the fixed version
+3. Update your components to utilize the new entryId parameter in the `fetchEntries` function
 
 ## Tech Stack
 

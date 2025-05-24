@@ -9,36 +9,87 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     --color-background-light: #ffffff;
-    --color-background-dark: #121212;
+    --color-background-dark: #191919;
+    --color-notion-text-light: #37352f;
+    --color-notion-text-dark: #e6e6e6;
   }
   
   body {
     background-color: var(--color-background-light);
-    color: #111827;
-    @apply min-h-screen transition-colors duration-200;
+    color: var(--color-notion-text-light);
+    @apply min-h-screen transition-colors duration-200 font-sans text-[15px];
+    line-height: 1.5;
+    letter-spacing: -0.011em;
   }
+  
   .dark body {
     background-color: var(--color-background-dark);
-    color: #f3f4f6;
+    color: var(--color-notion-text-dark);
+  }
+  
+  h1, h2, h3, h4 {
+    letter-spacing: -0.02em;
+  }
+  
+  ::selection {
+    @apply bg-gray-200 dark:bg-gray-700;
   }
 }
 
 @layer components {
   .btn {
-    @apply px-4 py-2 rounded-md font-medium transition-all duration-200;
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200 text-sm;
   }
 
   .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 text-white shadow-sm;
+    @apply bg-black hover:bg-gray-800 text-white dark:bg-white dark:text-black dark:hover:bg-gray-200 shadow-sm;
   }
   
   .card {
-    @apply bg-white dark:bg-gray-800 rounded-xl shadow-md overflow-hidden transition-all duration-200;
+    @apply bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-200;
   }
 
   .input {
-    @apply px-3 py-2 rounded-md border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 
-           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-           transition-all duration-200;
+    @apply px-3 py-2 rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 
+           focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-gray-400 focus:border-transparent
+           transition-all duration-200 text-sm;
+  }
+  
+  /* Notion-inspired components */
+  .notion-page-title {
+    @apply text-4xl font-bold text-black dark:text-white mb-6 tracking-tight;
+  }
+  
+  .notion-h1 {
+    @apply text-2xl font-bold text-black dark:text-white mb-2 tracking-tight;
+  }
+  
+  .notion-h2 {
+    @apply text-xl font-semibold text-black dark:text-white mb-1;
+  }
+  
+  .notion-text {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+  
+  .notion-sidebar-item {
+    @apply px-2 py-1.5 rounded text-sm flex items-center text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors w-full text-left;
+  }
+  
+  .notion-sidebar-item-active {
+    @apply bg-gray-100 dark:bg-gray-800 text-black dark:text-white font-medium;
+  }
+  
+  /* Additional Notion-inspired styles */
+  .notion-button {
+    @apply bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md px-3 py-1.5 text-sm font-medium transition-colors;
+  }
+  
+  .notion-button-primary {
+    @apply bg-black hover:bg-gray-800 dark:bg-white dark:hover:bg-gray-200 text-white dark:text-black;
+  }
+  
+  .notion-card {
+    @apply p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md;
   }
 }

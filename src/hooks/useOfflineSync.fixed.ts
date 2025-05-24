@@ -1,0 +1,1 @@
+// This file is intentionally left blank. Offline sync has been removed. Use only Supabase logic in your app.
