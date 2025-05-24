@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import type { JournalEntry, JournalEntryFormData } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,6 +15,16 @@ interface PendingOperation {
   timestamp: number;
 }
 
+interface EntryCache {
+  [id: string]: {
+    entry: JournalEntry;
+    timestamp: number;
+  }
+}
+
+// Cache expiration time (30 minutes)
+const CACHE_EXPIRATION_MS = 30 * 60 * 1000;
+
 export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
   const { user } = useAuth();
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -23,6 +33,28 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
   const [lastSyncTime, setLastSyncTime] = useState<number | null>(
     Number(localStorage.getItem('journify-last-sync')) || null
   );
+  
+  // Use a ref for the entry cache to avoid unnecessary re-renders
+  const entryCacheRef = useRef<EntryCache>({});
+
+  // Initialize cache from localStorage on first load
+  useEffect(() => {
+    const cachedEntries = localStorage.getItem('journify-entry-cache');
+    if (cachedEntries) {
+      try {
+        entryCacheRef.current = JSON.parse(cachedEntries);
+      } catch (e) {
+        console.error('Failed to parse cached entries', e);
+        // Clear invalid cache
+        localStorage.removeItem('journify-entry-cache');
+      }
+    }
+  }, []);
+
+  // Helper to save cache to localStorage
+  const saveCache = useCallback(() => {
+    localStorage.setItem('journify-entry-cache', JSON.stringify(entryCacheRef.current));
+  }, []);
 
   // Handle online/offline status
   useEffect(() => {
@@ -102,6 +134,13 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       const offlineEntries = JSON.parse(localStorage.getItem('journify-offline-entries') || '[]');
       localStorage.setItem('journify-offline-entries', JSON.stringify([...offlineEntries, tempEntry]));
 
+      // Update entry cache
+      entryCacheRef.current[tempId] = {
+        entry: tempEntry,
+        timestamp: Date.now()
+      };
+      saveCache();
+
       return { data: tempEntry, error: null };
     }
 
@@ -119,6 +158,13 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       const now = Date.now();
       localStorage.setItem('journify-last-sync', now.toString());
       setLastSyncTime(now);
+
+      // Update entry cache
+      entryCacheRef.current[newEntry.id] = {
+        entry: newEntry as JournalEntry,
+        timestamp: now
+      };
+      saveCache();
 
       return { data: newEntry as JournalEntry, error: null };
     } catch (error) {
@@ -150,12 +196,21 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       const offlineEntries = JSON.parse(localStorage.getItem('journify-offline-entries') || '[]');
       const updatedEntries = offlineEntries.map((entry: JournalEntry) => {
         if (entry.id === id) {
-          return { ...entry, ...data, updated_at: new Date().toISOString() };
+          const updatedEntry = { ...entry, ...data, updated_at: new Date().toISOString() };
+          
+          // Update the cache
+          entryCacheRef.current[id] = {
+            entry: updatedEntry,
+            timestamp: Date.now()
+          };
+          
+          return updatedEntry;
         }
         return entry;
       });
 
       localStorage.setItem('journify-offline-entries', JSON.stringify(updatedEntries));
+      saveCache();
       
       // Find the updated entry for return
       const updatedEntry = updatedEntries.find((entry: JournalEntry) => entry.id === id);
@@ -178,6 +233,13 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       const now = Date.now();
       localStorage.setItem('journify-last-sync', now.toString());
       setLastSyncTime(now);
+
+      // Update the cache
+      entryCacheRef.current[id] = {
+        entry: updatedEntry as JournalEntry,
+        timestamp: now
+      };
+      saveCache();
 
       return { data: updatedEntry as JournalEntry, error: null };
     } catch (error) {
@@ -209,6 +271,12 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       const filteredEntries = offlineEntries.filter((entry: JournalEntry) => entry.id !== id);
       localStorage.setItem('journify-offline-entries', JSON.stringify(filteredEntries));
 
+      // Remove from cache
+      if (entryCacheRef.current[id]) {
+        delete entryCacheRef.current[id];
+        saveCache();
+      }
+
       return { error: null };
     }
 
@@ -227,6 +295,12 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       localStorage.setItem('journify-last-sync', now.toString());
       setLastSyncTime(now);
 
+      // Remove from cache
+      if (entryCacheRef.current[id]) {
+        delete entryCacheRef.current[id];
+        saveCache();
+      }
+
       return { error: null };
     } catch (error) {
       console.error('Error deleting entry:', error);
@@ -234,11 +308,93 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
     }
   };
 
-  // Function to fetch entries (combines online and offline data)
-  const fetchEntries = async (): Promise<{ data: JournalEntry[]; error: Error | null }> => {
+  // Function to fetch entries (with caching and optional single entry fetch)
+  const fetchEntries = async (entryId?: string): Promise<{ data: JournalEntry[] | JournalEntry | null; error: Error | null }> => {
     if (!user) return { data: [], error: new Error('User is not authenticated') };
 
     try {
+      // If fetching a specific entry, check cache first
+      if (entryId) {
+        const cachedEntry = entryCacheRef.current[entryId];
+        
+        // If entry is in cache and is recent, return it immediately
+        if (cachedEntry && (Date.now() - cachedEntry.timestamp < CACHE_EXPIRATION_MS)) {
+          return { data: cachedEntry.entry, error: null };
+        }
+        
+        // If online, fetch the specific entry
+        if (isOnline) {
+          const { data, error: fetchError } = await supabase
+            .from('journal_entries')
+            .select('*')
+            .eq('id', entryId)
+            .eq('user_id', user.id)
+            .single();
+
+          if (fetchError) {
+            // If not found online, check local storage
+            const offlineEntries = JSON.parse(localStorage.getItem('journify-offline-entries') || '[]');
+            const offlineEntry = offlineEntries.find((entry: JournalEntry) => entry.id === entryId);
+            
+            if (offlineEntry) {
+              // Add to cache
+              entryCacheRef.current[entryId] = {
+                entry: offlineEntry,
+                timestamp: Date.now()
+              };
+              saveCache();
+              
+              return { data: offlineEntry, error: null };
+            }
+            
+            return { data: null, error: fetchError };
+          }
+          
+          // Add to cache
+          const now = Date.now();
+          entryCacheRef.current[entryId] = {
+            entry: data as JournalEntry,
+            timestamp: now
+          };
+          saveCache();
+          
+          return { data: data as JournalEntry, error: null };
+        } else {
+          // If offline, check local offline entries
+          const offlineEntries = JSON.parse(localStorage.getItem('journify-offline-entries') || '[]');
+          const offlineEntry = offlineEntries.find((entry: JournalEntry) => entry.id === entryId);
+          
+          if (offlineEntry) {
+            // Add to cache
+            entryCacheRef.current[entryId] = {
+              entry: offlineEntry,
+              timestamp: Date.now()
+            };
+            saveCache();
+            
+            return { data: offlineEntry, error: null };
+          }
+          
+          // If not in offline entries, check cached entries
+          const cachedEntries = JSON.parse(localStorage.getItem('journify-cached-entries') || '[]');
+          const cachedEntry = cachedEntries.find((entry: JournalEntry) => entry.id === entryId);
+          
+          if (cachedEntry) {
+            // Add to cache
+            entryCacheRef.current[entryId] = {
+              entry: cachedEntry,
+              timestamp: Date.now()
+            };
+            saveCache();
+            
+            return { data: cachedEntry, error: null };
+          }
+          
+          return { data: null, error: new Error('Entry not found') };
+        }
+      }
+
+      // If fetching all entries
       let onlineEntries: JournalEntry[] = [];
       let error = null;
 
@@ -262,6 +418,15 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
           
           // Cache entries for offline use
           localStorage.setItem('journify-cached-entries', JSON.stringify(onlineEntries));
+          
+          // Update individual entry cache
+          onlineEntries.forEach(entry => {
+            entryCacheRef.current[entry.id] = {
+              entry,
+              timestamp: now
+            };
+          });
+          saveCache();
         }
       } else {
         // Use cached entries from last sync if available
@@ -275,21 +440,21 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       const offlineEntriesStr = localStorage.getItem('journify-offline-entries');
       const offlineEntries = offlineEntriesStr ? JSON.parse(offlineEntriesStr) : [];
 
-      // Combine and deduplicate entries (giving priority to offline changes)
-      // const onlineEntriesMap = new Map(onlineEntries.map(entry => [entry.id, entry]));
-      // const offlineEntriesMap = new Map(offlineEntries.map((entry: JournalEntry) => [entry.id, entry]));
-      // Start with online entries
-      const combinedEntries = [...onlineEntries];
+      // Combine and deduplicate entries efficiently using a Map
+      const entriesMap = new Map();
       
-      // Add or override with offline entries
-      offlineEntries.forEach((entry: JournalEntry) => {
-        const existingIndex = combinedEntries.findIndex(e => e.id === entry.id);
-        if (existingIndex >= 0) {
-          combinedEntries[existingIndex] = entry;
-        } else {
-          combinedEntries.push(entry);
-        }
+      // Add online entries first
+      onlineEntries.forEach(entry => {
+        entriesMap.set(entry.id, entry);
       });
+      
+      // Override with offline entries
+      offlineEntries.forEach((entry: JournalEntry) => {
+        entriesMap.set(entry.id, entry);
+      });
+      
+      // Convert map to array
+      const combinedEntries = Array.from(entriesMap.values());
       
       // Sort by creation date (newest first)
       combinedEntries.sort((a, b) => 
@@ -412,6 +577,15 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
 
       if (data) {
         localStorage.setItem('journify-cached-entries', JSON.stringify(data));
+        
+        // Update individual entry cache
+        data.forEach((entry: JournalEntry) => {
+          entryCacheRef.current[entry.id] = {
+            entry: entry as JournalEntry,
+            timestamp: now
+          };
+        });
+        saveCache();
       }
 
     } catch (error) {
@@ -420,6 +594,31 @@ export function useOfflineSync({ enabled = true }: UseOfflineSyncOptions = {}) {
       setIsSyncing(false);
     }
   };
+
+  // Clean expired cache entries
+  useEffect(() => {
+    const cleanCache = () => {
+      const now = Date.now();
+      let hasChanges = false;
+      
+      Object.keys(entryCacheRef.current).forEach(id => {
+        if (now - entryCacheRef.current[id].timestamp > CACHE_EXPIRATION_MS) {
+          delete entryCacheRef.current[id];
+          hasChanges = true;
+        }
+      });
+      
+      if (hasChanges) {
+        saveCache();
+      }
+    };
+    
+    // Clean cache on mount and every 5 minutes
+    cleanCache();
+    const interval = setInterval(cleanCache, 5 * 60 * 1000);
+    
+    return () => clearInterval(interval);
+  }, [saveCache]);
 
   // Manual sync function
   const manualSync = async (): Promise<void> => {

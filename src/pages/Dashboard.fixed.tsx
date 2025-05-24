@@ -41,16 +41,26 @@ export default function Dashboard() {
         if (error) throw error;
         
         // Store all entries for filtering
-        setAllEntries(data);
-        
-        // Extract all unique tags for filtering
-        const tags = new Set<string>();
-        data.forEach(entry => {
-          if (entry.tags && entry.tags.length > 0) {
-            entry.tags.forEach(tag => tags.add(tag));
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+          setAllEntries([]);
+        } else if (Array.isArray(data)) {
+          setAllEntries(data);
+          // Extract all unique tags for filtering
+          const tags = new Set<string>();
+          data.forEach((entry: JournalEntry) => {
+            if (entry.tags && entry.tags.length > 0) {
+              entry.tags.forEach((tag: string) => tags.add(tag));
+            }
+          });
+          setAvailableTags(Array.from(tags).sort());
+        } else {
+          setAllEntries([data]);
+          const tags = new Set<string>();
+          if (data.tags && data.tags.length > 0) {
+            data.tags.forEach((tag: string) => tags.add(tag));
           }
-        });
-        setAvailableTags(Array.from(tags).sort());
+          setAvailableTags(Array.from(tags).sort());
+        }
         
       } catch (error) {
         console.error('Error fetching journal entries:', error);

@@ -32,24 +32,29 @@ export function useEntriesLoader() {
           throw new Error(fetchError.message || 'Failed to load entries');
         }
         
-        if (!data || data.length === 0) {
-          // If we're online and got no data, this might be normal (empty journal)
-          // If offline, we might just not have cached data
+        if (!data || (Array.isArray(data) && data.length === 0)) {
           setAllEntries([]);
           setEntries([]);
           setAvailableTags([]);
-        } else {
-          // Store all entries for filtering
+        } else if (Array.isArray(data)) {
           setAllEntries(data);
           setEntries(data);
-          
           // Extract all unique tags for filtering
           const tags = new Set<string>();
-          data.forEach(entry => {
+          data.forEach((entry: JournalEntry) => {
             if (entry.tags && entry.tags.length > 0) {
-              entry.tags.forEach(tag => tags.add(tag));
+              entry.tags.forEach((tag: string) => tags.add(tag));
             }
           });
+          setAvailableTags(Array.from(tags).sort());
+        } else {
+          // If data is a single JournalEntry, wrap in array
+          setAllEntries([data]);
+          setEntries([data]);
+          const tags = new Set<string>();
+          if (data.tags && data.tags.length > 0) {
+            data.tags.forEach((tag: string) => tags.add(tag));
+          }
           setAvailableTags(Array.from(tags).sort());
         }
       } catch (err) {
