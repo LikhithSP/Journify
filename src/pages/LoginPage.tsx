@@ -44,7 +44,7 @@ export default function LoginPage() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="min-h-screen flex items-center justify-center p-4 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 overflow-hidden relative"
+      className={`min-h-screen flex items-center justify-center p-4 text-neutral-900 dark:text-neutral-100 overflow-hidden relative ${theme === 'light' ? 'bg-[rgba(229,226,226,0.59)]' : 'bg-neutral-900'}`}
     >
       {/* Fixed Journify logo in top left */}
       <div className="fixed top-4 left-4 z-50 flex items-center">
@@ -71,7 +71,7 @@ export default function LoginPage() {
         {/* Image side */}
         <div className="md:w-1/2 relative bg-neutral-100 dark:bg-neutral-900 hidden md:flex items-center justify-center overflow-hidden p-0">
           <img 
-            src="/not-o.avif" 
+            src="https://i.pinimg.com/originals/0a/ac/a8/0aaca86b5e95ebc6f06ebf60937b026d.gif" 
             alt="Journal illustration" 
             className="absolute inset-0 w-full h-full object-cover object-center z-10 dark:brightness-75" 
             draggable="false"
