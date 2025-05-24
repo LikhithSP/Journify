@@ -116,7 +116,7 @@ export default function Layout() {
                   </div>
                 </button>
                 <button 
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
                   onClick={handleLogout}
                 >
                   <LogOut size={16} />
