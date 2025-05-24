@@ -162,7 +162,7 @@ export default function Dashboard() {
     <div className="max-w-5xl mx-auto px-2">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
-        <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">Journal</h1>
+        <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
         <div className="flex items-center space-x-3 flex-wrap gap-2">
           <Link
             to="/entry/new"
@@ -272,11 +272,11 @@ export default function Dashboard() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex flex-col space-y-3"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6"
         >
           {entries.map((entry) => (
             <motion.div key={entry.id} variants={itemVariants}>
-              <NotionCard entry={entry} viewType="list" />
+              <NotionCard entry={entry} viewType="grid" />
             </motion.div>
           ))}
         </motion.div>
