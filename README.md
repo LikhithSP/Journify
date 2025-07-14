@@ -1,6 +1,7 @@
 # Journify - Your Daily Journal Companion
 <p align="center">
   <img src="./journify-prev.png">
+  <img src="./journify-preview1.png">
   <b>Journify is a modern, sleek daily journaling web app designed to provide a distraction-free, aesthetically pleasing journaling experience.</b><br><a href="https://journifyx.vercel.app" target="_blank">Visit Now</a> <br>
 
 </p>
