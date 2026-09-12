@@ -7,13 +7,23 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
-        title: ['-apple-system', 'BlinkMacSystemFont', 'Inter', 'Helvetica', 'Arial', 'sans-serif'],
-        accent: ['Inter', 'Helvetica', 'Arial', 'sans-serif'],
+        sans: ['var(--font-body)', "'Plus Jakarta Sans'", 'Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+        display: ['var(--font-display)', "'Syne'", 'sans-serif'],
+        title: ["'Syne'", 'Inter', '-apple-system', 'sans-serif'],
+        accent: ["'Plus Jakarta Sans'", 'Inter', 'sans-serif'],
         mono: ['SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       colors: {
+        background: {
+          DEFAULT: 'hsl(var(--background))',
+          light: '#ffffff',
+          dark: '#191919',
+        },
+        foreground: 'hsl(var(--foreground))',
+        'muted-foreground': 'hsl(var(--muted-foreground))',
         primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
           50: '#f0f9ff',
           100: '#e0f2fe',
           200: '#bae6fd',
@@ -26,12 +36,19 @@ module.exports = {
           900: '#0c4a6e',
           950: '#082f49',
         },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+        },
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
         gray: {
           750: '#2c2c2c',
-        },
-        background: {
-          light: '#ffffff',
-          dark: '#191919',
         },
         notion: {
           default: '#37352f',
