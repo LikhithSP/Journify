@@ -161,7 +161,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
     <div className="max-w-5xl mx-auto px-2 min-h-screen dark:bg-[rgb(23,23,23)] bg-white">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
-        <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
+        <h1 className="notion-page-title text-2xl sm:text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
         <div className="flex items-center space-x-3 flex-wrap gap-2">
           <Link
             to="/app/library"
@@ -201,7 +201,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
           )}
         </div>
         {/* Mood filters */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-nowrap">
           {availableMoods.map((mood) => (
             <button
               key={mood}
@@ -218,7 +218,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
           ))}
         </div>
         {/* Tag filters */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar flex-nowrap">
           {availableTags.length > 0 && availableTags.map((tag) => (
             <button
               key={tag}

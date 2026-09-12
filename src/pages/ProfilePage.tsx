@@ -144,7 +144,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="max-w-xl mx-auto py-6 text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-300">
+    <div className="max-w-xl mx-auto px-4 sm:px-0 py-6 text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-300">
       {/* Back button */}
       <div className="mb-6 flex items-center justify-between">
         <button

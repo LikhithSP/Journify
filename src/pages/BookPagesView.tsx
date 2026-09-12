@@ -261,7 +261,7 @@ export default function BookPagesView() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 min-h-screen text-neutral-900 dark:text-neutral-100">
       {/* Top Header Back Navigation */}
-      <div className="flex items-center justify-between mb-8 pb-4 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 pb-4 border-b border-neutral-200 dark:border-neutral-800">
         <button
           onClick={() => {
             if (isDailyMonth) {
@@ -405,7 +405,7 @@ export default function BookPagesView() {
         ) : (
           <div>
             {/* Book Spread Navigation & Controls */}
-            <div className="flex items-center justify-between mb-4 px-2">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4 px-2">
               <div className="flex items-center gap-2">
                 <button
                   onClick={goToPrevPage}
@@ -429,30 +429,33 @@ export default function BookPagesView() {
               </div>
 
               {currentEntry && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <button
                     onClick={handleWriteNewPage}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 transition-all shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 transition-all shadow-sm"
                     title="Write next page in this book"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>Next Page & Write</span>
+                    <span className="hidden xs:inline">Next Page & Write</span>
+                    <span className="xs:hidden">Write</span>
                   </button>
                   <button
                     onClick={() => navigate(`/app/entry/${currentEntry.id}/edit`)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-all shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 transition-all shadow-sm"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit This Page</span>
+                    <span className="hidden sm:inline">Edit This Page</span>
+                    <span className="sm:hidden">Edit</span>
                   </button>
                   <button
                     onClick={handleDeleteCurrentPage}
                     disabled={deletingPage}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/40 transition-all shadow-sm disabled:opacity-50"
+                    className="inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-xl text-xs font-semibold bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/40 transition-all shadow-sm disabled:opacity-50"
                     title="Delete current page"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>{deletingPage ? 'Deleting...' : 'Delete Page'}</span>
+                    <span className="hidden sm:inline">{deletingPage ? 'Deleting...' : 'Delete Page'}</span>
+                    <span className="sm:hidden">Del</span>
                   </button>
                 </div>
               )}
@@ -460,11 +463,11 @@ export default function BookPagesView() {
 
             {/* Realistic Open Book Double-Page Spread with Smooth Page Turn Animation */}
             <div className="relative max-w-5xl mx-auto my-4 perspective-[2000px]">
-              {/* Stacked Paper Pages Edge Effect on Left & Right */}
-              <div className="absolute -left-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-l-xl opacity-60 shadow-md pointer-events-none transform -rotate-1 z-0" />
-              <div className="absolute -left-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-l-xl opacity-80 shadow-sm pointer-events-none transform -rotate-0.5 z-0" />
-              <div className="absolute -right-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-r-xl opacity-60 shadow-md pointer-events-none transform rotate-1 z-0" />
-              <div className="absolute -right-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-r-xl opacity-80 shadow-sm pointer-events-none transform rotate-0.5 z-0" />
+              {/* Stacked Paper Pages Edge Effect on Left & Right — hidden on mobile to prevent overflow */}
+              <div className="paper-edge-deco absolute -left-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-l-xl opacity-60 shadow-md pointer-events-none transform -rotate-1 z-0" />
+              <div className="paper-edge-deco absolute -left-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-l-xl opacity-80 shadow-sm pointer-events-none transform -rotate-0.5 z-0" />
+              <div className="paper-edge-deco absolute -right-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-r-xl opacity-60 shadow-md pointer-events-none transform rotate-1 z-0" />
+              <div className="paper-edge-deco absolute -right-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-r-xl opacity-80 shadow-sm pointer-events-none transform rotate-0.5 z-0" />
 
               <AnimatePresence mode="wait" initial={false}>
                 <motion.div
@@ -502,7 +505,7 @@ export default function BookPagesView() {
                     }
                   }}
                   style={{ transformStyle: 'preserve-3d' }}
-                  className="open-journal-spread w-full aspect-[16/10] sm:aspect-[16/9.5] min-h-[540px] relative overflow-hidden flex flex-col md:flex-row bg-[#111113] border border-white/10 p-6 sm:p-10 shadow-2xl z-10"
+                  className="open-journal-spread w-full aspect-[16/10] sm:aspect-[16/9.5] min-h-[380px] sm:min-h-[540px] relative overflow-hidden flex flex-col md:flex-row bg-[#111113] border border-white/10 p-4 sm:p-10 shadow-2xl z-10"
                 >
                   {/* Center Valley / Spine Crease */}
                   <div className="journal-center-spine" />
@@ -520,7 +523,7 @@ export default function BookPagesView() {
                   </div>
 
                 {/* LEFT PAGE SPREAD: Left Written Text OR Scrapbook Memories / Sticky Notes */}
-                <div className="w-full md:w-1/2 pr-0 md:pr-10 pt-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-black/5 dark:border-white/5 relative">
+                  <div className="w-full md:w-1/2 pr-0 md:pr-10 pt-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-black/5 dark:border-white/5 relative">
                   {currentEntryParsedLeftText ? (
                     /* Written content on Left Page */
                     <div className="flex-1 flex flex-col justify-between">
@@ -558,7 +561,7 @@ export default function BookPagesView() {
                     /* Scrapbook or Empty Placeholder on Left Page */
                     <div className="relative h-full flex flex-col justify-center items-center">
                       {currentEntryCanvasElements.length > 0 ? (
-                        <div className="relative w-full h-[360px] rounded-xl overflow-hidden bg-black/[0.01] dark:bg-white/[0.01]">
+                      <div className="relative w-full h-[200px] sm:h-[360px] rounded-xl overflow-hidden bg-black/[0.01] dark:bg-white/[0.01]">
                           {currentEntryCanvasElements.map((elem) => (
                             <div
                               key={elem.id}

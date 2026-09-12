@@ -352,7 +352,7 @@ export default function BookshelfView() {
         </div>
 
         {/* View Switcher & Action */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 flex-wrap">
           {/* Toggle between 3D Book Covers & Standing Spines */}
           <div className="inline-flex p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
             <button
@@ -452,7 +452,7 @@ export default function BookshelfView() {
                         {/* 3D Book Container */}
                         <div 
                           onClick={() => navigate(`/app/book/${book.id}`)}
-                          className="book-cover-3d relative w-56 sm:w-60 aspect-[1/1.4] cursor-pointer overflow-hidden rounded-md border border-black/10 dark:border-white/10"
+                          className="book-cover-3d relative w-36 sm:w-52 md:w-60 aspect-[1/1.4] cursor-pointer overflow-hidden rounded-md border border-black/10 dark:border-white/10"
                         >
                           {/* Spine Hinge 3D Effect */}
                           <div className="book-spine-hinge" />
@@ -526,10 +526,10 @@ export default function BookshelfView() {
 
       {/* VIEW 2: JAN - DEC DAILY JOURNAL SHELF (Standing Spines, matching Image 2) */}
       {shelfMode === 'daily' && (
-        <div className="mt-4">
+          <div className="mt-4">
           <div className="relative pt-6 pb-2">
-            {/* Standing Books Spines Row */}
-            <div className="flex items-end justify-center gap-2 sm:gap-4 px-4 pt-6 pb-0 overflow-visible relative z-10 min-h-[350px]">
+            {/* Standing Books Spines Row — horizontal scroll on mobile */}
+            <div className="spines-scroll-container flex items-end justify-start sm:justify-center gap-1.5 sm:gap-2 md:gap-4 px-2 sm:px-4 pt-6 pb-0 overflow-x-auto relative z-10 min-h-[280px] sm:min-h-[350px]">
               {MONTHS.map((monthName, idx) => {
                 const monthStyle = SPINE_STYLES[idx % SPINE_STYLES.length];
                 const monthEntries = monthlyEntries[idx] || [];
@@ -540,22 +540,22 @@ export default function BookshelfView() {
                     key={monthName}
                     whileHover={{ y: -16, transition: { duration: 0.2, ease: 'easeOut' } }}
                     onClick={() => navigate(`/app/daily/${selectedYear}/${idx + 1}`)}
-                    className={`standing-spine ${monthStyle.bg} w-14 sm:w-16 md:w-20 cursor-pointer h-72 sm:h-80 md:h-92 flex flex-col justify-between py-6 px-2 text-center rounded-t-md relative group border-t border-l border-white/20 select-none`}
+                    className={`standing-spine ${monthStyle.bg} w-10 sm:w-14 md:w-20 cursor-pointer h-52 sm:h-72 md:h-92 flex flex-col justify-between py-4 sm:py-6 px-1.5 sm:px-2 text-center rounded-t-md relative group border-t border-l border-white/20 select-none flex-shrink-0`}
                   >
                     {/* Top Spine Bookmark Accent */}
-                    <div className="flex flex-col items-center">
-                      <div className={`w-2 h-4 ${monthStyle.accent} rounded-b-sm mb-2 opacity-90 shadow-sm`} />
-                      <span className="text-[10px] font-mono tracking-widest uppercase opacity-75">
+                      <div className="flex flex-col items-center">
+                        <div className={`w-1.5 h-3 sm:w-2 sm:h-4 ${monthStyle.accent} rounded-b-sm mb-1.5 sm:mb-2 opacity-90 shadow-sm`} />
+                        <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase opacity-75">
                         {selectedYear}
                       </span>
                     </div>
 
-                    {/* Vertical Month & Title (Editorial Spine Typography like Image 2) */}
-                    <div className="flex-1 flex flex-col items-center justify-center my-4">
-                      <div 
-                        className="writing-vertical text-sm sm:text-base font-display font-bold tracking-[0.2em] uppercase transform rotate-180"
-                        style={{ writingMode: 'vertical-rl' }}
-                      >
+                      {/* Vertical Month & Title (Editorial Spine Typography like Image 2) */}
+                      <div className="flex-1 flex flex-col items-center justify-center my-2 sm:my-4">
+                        <div 
+                          className="writing-vertical text-xs sm:text-sm md:text-base font-display font-bold tracking-[0.2em] uppercase transform rotate-180"
+                          style={{ writingMode: 'vertical-rl' }}
+                        >
                         {monthName}
                       </div>
                     </div>

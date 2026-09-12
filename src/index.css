@@ -34,6 +34,7 @@
     @apply min-h-screen transition-colors duration-200 font-sans text-[15px];
     line-height: 1.5;
     letter-spacing: -0.011em;
+    overflow-x: hidden;
   }
   
   .dark body {
@@ -352,5 +353,28 @@
   backdrop-filter: blur(1px);
 }
 
+/* Mobile: canvas touch scrolling */
+@media (max-width: 767px) {
+  .open-journal-spread {
+    padding: 1.25rem !important;
+  }
 
+  .open-journal-spread .journal-center-spine {
+    display: none;
+  }
 
+  /* Hide decorative paper edges that cause overflow on mobile */
+  .paper-edge-deco {
+    display: none !important;
+  }
+
+  /* Spine standing books: horizontal scroll container */
+  .spines-scroll-container {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .spines-scroll-container::-webkit-scrollbar {
+    display: none;
+  }
+}

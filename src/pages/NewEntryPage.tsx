@@ -489,9 +489,9 @@ export default function NewEntryPage() {
       )}
 
       {/* Interactive Tool Palette (Left Page Visuals & Universal Stickers) */}
-      <div className="mb-6 flex items-center justify-between gap-4 p-3 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider mr-1">Add to Left Page:</span>
+      <div className="mb-6 p-3 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 no-scrollbar flex-nowrap">
+          <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider mr-1 flex-shrink-0">Add to Left Page:</span>
           
           <button
             onClick={() => addStickyNote('#fef08a')}
@@ -510,27 +510,29 @@ export default function NewEntryPage() {
           </button>
 
           {/* Quick Universal Stickers */}
-          <div className="flex items-center gap-1.5 pl-3 border-l border-neutral-300 dark:border-neutral-700">
-            <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider mr-0.5 flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-shrink-0 pl-2 border-l border-neutral-300 dark:border-neutral-700">
+            <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider mr-0.5 flex items-center gap-1 flex-shrink-0">
               <Sparkles className="w-3 h-3 text-amber-500" />
               <span>Stickers:</span>
             </span>
-            {STICKERS.map(s => (
-              <button
-                key={s}
-                onClick={() => addSticker(s)}
-                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-neutral-800 hover:scale-125 transition-transform text-base"
-                title="Click to insert sticker (drag anywhere!)"
-              >
-                {s}
-              </button>
-            ))}
+            <div className="flex items-center gap-1">
+              {STICKERS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => addSticker(s)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white dark:hover:bg-neutral-800 hover:scale-125 transition-transform text-base flex-shrink-0"
+                  title="Click to insert sticker (drag anywhere!)"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
         {/* Selected Element Controls */}
         {selectedId && (
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-2 border-t border-neutral-200 dark:border-neutral-700">
             {elements.find(e => e.id === selectedId)?.type === 'sticky' && (
               <>
                 <div className="flex items-center bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-700 p-0.5 shadow-sm mr-1">
@@ -597,7 +599,7 @@ export default function NewEntryPage() {
           <div className="text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
             Add Picture to Left Page Scrapbook
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <input
               type="text"
               placeholder="Paste Image URL (Unsplash, Pinterest, etc.)..."
@@ -623,16 +625,16 @@ export default function NewEntryPage() {
 
       {/* REALISTIC OPEN BOOK SPREAD (Sleek Black default) */}
       <div className="relative max-w-5xl mx-auto my-4 perspective-[2000px]">
-        {/* Realistic Stacked Paper Edges */}
-        <div className="absolute -left-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-l-xl opacity-60 shadow-md pointer-events-none transform -rotate-1 z-0" />
-        <div className="absolute -left-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-l-xl opacity-80 shadow-sm pointer-events-none transform -rotate-0.5 z-0" />
-        <div className="absolute -right-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-r-xl opacity-60 shadow-md pointer-events-none transform rotate-1 z-0" />
-        <div className="absolute -right-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-r-xl opacity-80 shadow-sm pointer-events-none transform rotate-0.5 z-0" />
+        {/* Realistic Stacked Paper Edges - hidden on mobile to prevent horizontal overflow */}
+        <div className="paper-edge-deco absolute -left-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-l-xl opacity-60 shadow-md pointer-events-none transform -rotate-1 z-0" />
+        <div className="paper-edge-deco absolute -left-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-l-xl opacity-80 shadow-sm pointer-events-none transform -rotate-0.5 z-0" />
+        <div className="paper-edge-deco absolute -right-4 top-3 bottom-3 w-6 bg-neutral-200 dark:bg-neutral-800 rounded-r-xl opacity-60 shadow-md pointer-events-none transform rotate-1 z-0" />
+        <div className="paper-edge-deco absolute -right-2 top-1.5 bottom-1.5 w-4 bg-neutral-100 dark:bg-neutral-700 rounded-r-xl opacity-80 shadow-sm pointer-events-none transform rotate-0.5 z-0" />
 
         {/* Double-Page Spread Canvas */}
         <div
           ref={spreadRef}
-          className="open-journal-spread w-full min-h-[620px] relative overflow-hidden flex flex-col md:flex-row bg-[#111113] border border-white/10 p-6 sm:p-10 shadow-2xl z-10 select-none"
+          className="open-journal-spread w-full min-h-[420px] sm:min-h-[620px] relative overflow-hidden flex flex-col md:flex-row bg-[#111113] border border-white/10 p-4 sm:p-10 shadow-2xl z-10 select-none"
         >
           {/* Center Spine Crease */}
           <div className="journal-center-spine" />
