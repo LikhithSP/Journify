@@ -5,6 +5,8 @@ import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import LandingPage from './pages/LandingPage.tsx';
+import BookshelfView from './pages/BookshelfView.tsx';
+import BookPagesView from './pages/BookPagesView.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import RegisterPage from './pages/RegisterPage.tsx';
 import Dashboard from './pages/Dashboard.tsx';
@@ -67,6 +69,9 @@ function App() {
               {/* Protected App Routes */}
               <Route path="/app" element={session ? <Layout /> : <Navigate to="/login" />}>
                 <Route index element={<Dashboard />} />
+                <Route path="/app/library" element={<BookshelfView />} />
+                <Route path="/app/book/:bookId" element={<BookPagesView />} />
+                <Route path="/app/daily/:year/:month" element={<BookPagesView />} />
                 <Route path="/app/entry/new" element={<NewEntryPage />} />
                 <Route path="/app/entry/:id" element={<EntryPage />} />
                 <Route path="/app/entry/:id/edit" element={<EditEntryPage />} />

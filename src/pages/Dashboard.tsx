@@ -164,6 +164,12 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
         <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
         <div className="flex items-center space-x-3 flex-wrap gap-2">
           <Link
+            to="/app/library"
+            className="notion-button flex items-center bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-gray-100 px-3.5 py-1.5 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
+          >
+            <span>The Bookshelf</span>
+          </Link>
+          <Link
             to="/entry/new"
             className="notion-button flex items-center bg-black text-white dark:bg-white dark:text-black px-4 py-1.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"
           >

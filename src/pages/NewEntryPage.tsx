@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -21,10 +21,12 @@ import type { JournalEntryFormData } from '../types/journal';
 
 export default function NewEntryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const state = location.state as { bookId?: string; bookTitle?: string; defaultDate?: string } | null;
   const { user } = useAuth();
   const [title, setTitle] = useState<string>('');
   const [mood, setMood] = useState<'joyful' | 'peaceful' | 'sad' | 'angry' | 'anxious' | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(state?.bookTitle ? [state.bookTitle] : []);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [isPrivate, setIsPrivate] = useState<boolean>(true);
   const [saving, setSaving] = useState<boolean>(false);
@@ -85,28 +87,39 @@ export default function NewEntryPage() {
       setSaving(true);
       setError(null);
 
+      const finalTags = [...tags];
+      if (state?.bookTitle && !finalTags.includes(state.bookTitle)) {
+        finalTags.push(state.bookTitle);
+      }
+
       const newEntry: JournalEntryFormData = {
         title: title.trim(),
         content: editor.getHTML(),
         mood,
-        tags: tags.length > 0 ? tags : undefined,
+        tags: finalTags.length > 0 ? finalTags : undefined,
         is_favorite: isFavorite,
         is_private: isPrivate,
       };
 
       const { data, error } = await supabase
         .from('journal_entries')
-        .insert([{ ...newEntry, user_id: user.id }])
+        .insert([{ 
+          ...newEntry, 
+          user_id: user.id,
+          created_at: state?.defaultDate ? new Date(state.defaultDate).toISOString() : new Date().toISOString()
+        }])
         .select()
         .single();
 
       if (error) throw error;
 
       // Navigate to the appropriate page
-      if (data) {
+      if (state?.bookId) {
+        navigate(`/app/book/${state.bookId}`);
+      } else if (data) {
         navigate(`/entry/${data.id}`);
       } else {
-        navigate('/');
+        navigate('/app');
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to save entry');

@@ -20,6 +20,22 @@ export interface JournalEntry {
     icon?: string;
   } | null;
   images?: string[];
+  folder_id?: string | null;
+  book_id?: string | null;
+}
+
+export interface DiaryBook {
+  id: string;
+  user_id: string;
+  title: string;
+  subtitle?: string;
+  cover_url?: string;
+  spine_color?: string;
+  spine_pattern?: 'grid' | 'typography' | 'modern' | 'abstract' | 'minimal' | 'botanical' | 'gradient';
+  category?: 'custom' | 'yearly';
+  year?: number;
+  created_at: string;
+  updated_at?: string;
 }
 
 export interface JournalEntryFormData {
