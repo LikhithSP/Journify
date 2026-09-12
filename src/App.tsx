@@ -9,7 +9,6 @@ import BookshelfView from './pages/BookshelfView.tsx';
 import BookPagesView from './pages/BookPagesView.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import RegisterPage from './pages/RegisterPage.tsx';
-import Dashboard from './pages/Dashboard.tsx';
 import EntryPage from './pages/EntryPage.tsx';
 import NewEntryPage from './pages/NewEntryPage.tsx';
 import EditEntryPage from './pages/EditEntryPage.tsx';
@@ -68,7 +67,7 @@ function App() {
 
               {/* Protected App Routes */}
               <Route path="/app" element={session ? <Layout /> : <Navigate to="/login" />}>
-                <Route index element={<Dashboard />} />
+                <Route index element={<Navigate to="/app/library" replace />} />
                 <Route path="/app/library" element={<BookshelfView />} />
                 <Route path="/app/book/:bookId" element={<BookPagesView />} />
                 <Route path="/app/daily/:year/:month" element={<BookPagesView />} />

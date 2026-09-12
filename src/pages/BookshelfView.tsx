@@ -1,7 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, BookOpen, Library, X, ChevronRight, Trash2 } from 'lucide-react';
+import { Plus, BookOpen, Library, X, Trash2, Edit3, Upload, ChevronLeft, ChevronRight, GripVertical } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import type { JournalEntry, DiaryBook } from '../types/journal';
@@ -67,16 +67,94 @@ const SPINE_STYLES = [
 export default function BookshelfView() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [shelfMode, setShelfMode] = useState<'diaries' | 'daily'>('diaries');
+  const [searchParams] = useSearchParams();
+
+  const initialTab = searchParams.get('tab') === 'daily' ? 'daily' : 'diaries';
+  const initialYear = Number(searchParams.get('year')) || new Date().getFullYear();
+
+  const [shelfMode, setShelfMode] = useState<'diaries' | 'daily'>(initialTab);
   const [books, setBooks] = useState<DiaryBook[]>([]);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
 
-  // New Diary Modal
+  // New / Edit Diary Modal
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingBook, setEditingBook] = useState<DiaryBook | null>(null);
   const [newTitle, setNewTitle] = useState('');
-  const [newCover, setNewCover] = useState(DEFAULT_COVERS[0].cover);
   const [newSubtitle, setNewSubtitle] = useState('');
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [newCover, setNewCover] = useState(DEFAULT_COVERS[0].cover);
+  const [selectedYear, setSelectedYear] = useState(initialYear);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Drag and drop reordering state
+  const [draggedBookId, setDraggedBookId] = useState<string | null>(null);
+  const [dropTargetBookId, setDropTargetBookId] = useState<string | null>(null);
+
+  const handleDragStart = (e: React.DragEvent, bookId: string) => {
+    e.dataTransfer.setData('text/plain', bookId);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggedBookId(bookId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, bookId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dropTargetBookId !== bookId) {
+      setDropTargetBookId(bookId);
+    }
+  };
+
+  const handleDragLeave = (_e: React.DragEvent) => {
+    // optional reset if leaving container
+  };
+
+  const handleDrop = (e: React.DragEvent, targetBookId: string) => {
+    e.preventDefault();
+    const sourceBookId = e.dataTransfer.getData('text/plain') || draggedBookId;
+    if (!sourceBookId || sourceBookId === targetBookId) {
+      setDraggedBookId(null);
+      setDropTargetBookId(null);
+      return;
+    }
+
+    const sourceIndex = books.findIndex(b => b.id === sourceBookId);
+    const targetIndex = books.findIndex(b => b.id === targetBookId);
+
+    if (sourceIndex === -1 || targetIndex === -1) {
+      setDraggedBookId(null);
+      setDropTargetBookId(null);
+      return;
+    }
+
+    const reordered = [...books];
+    const [movedBook] = reordered.splice(sourceIndex, 1);
+    reordered.splice(targetIndex, 0, movedBook);
+
+    setBooks(reordered);
+    if (user) {
+      localStorage.setItem(`journify_books_${user.id}`, JSON.stringify(reordered));
+    }
+
+    setDraggedBookId(null);
+    setDropTargetBookId(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedBookId(null);
+    setDropTargetBookId(null);
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const result = event.target?.result as string;
+      if (result) {
+        setNewCover(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Load books from localStorage / Supabase
   useEffect(() => {
@@ -171,23 +249,62 @@ export default function BookshelfView() {
     }
   };
 
-  const handleCreateBook = () => {
-    if (!newTitle.trim() || !user) return;
-    const newBook: DiaryBook = {
-      id: `book-${Date.now()}`,
-      user_id: user.id,
-      title: newTitle.trim(),
-      subtitle: newSubtitle.trim() || 'Custom Journal',
-      cover_url: newCover,
-      spine_color: '#18181b',
-      category: 'custom',
-      created_at: new Date().toISOString(),
-    };
-    const updated = [newBook, ...books];
-    setBooks(updated);
-    localStorage.setItem(`journify_books_${user.id}`, JSON.stringify(updated));
+  const handleOpenCreate = () => {
+    setEditingBook(null);
     setNewTitle('');
     setNewSubtitle('');
+    setNewCover(DEFAULT_COVERS[0].cover);
+    setShowCreateModal(true);
+  };
+
+  const handleOpenEdit = (book: DiaryBook, e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    setEditingBook(book);
+    setNewTitle(book.title);
+    setNewSubtitle(book.subtitle || '');
+    setNewCover(book.cover_url || DEFAULT_COVERS[0].cover);
+    setShowCreateModal(true);
+  };
+
+  const handleSaveBook = () => {
+    if (!newTitle.trim() || !user) return;
+
+    if (editingBook) {
+      // Update existing book
+      const updated = books.map(b => {
+        if (b.id === editingBook.id) {
+          return {
+            ...b,
+            title: newTitle.trim(),
+            subtitle: newSubtitle.trim(),
+            cover_url: newCover,
+          };
+        }
+        return b;
+      });
+      setBooks(updated);
+      localStorage.setItem(`journify_books_${user.id}`, JSON.stringify(updated));
+    } else {
+      // Create new book
+      const newBook: DiaryBook = {
+        id: `book-${Date.now()}`,
+        user_id: user.id,
+        title: newTitle.trim(),
+        subtitle: newSubtitle.trim() || 'Custom Journal',
+        cover_url: newCover,
+        spine_color: '#18181b',
+        category: 'custom',
+        created_at: new Date().toISOString(),
+      };
+      const updated = [newBook, ...books];
+      setBooks(updated);
+      localStorage.setItem(`journify_books_${user.id}`, JSON.stringify(updated));
+    }
+
+    setNewTitle('');
+    setNewSubtitle('');
+    setEditingBook(null);
     setShowCreateModal(false);
   };
 
@@ -215,27 +332,27 @@ export default function BookshelfView() {
   }, [entries, selectedYear]);
 
   return (
-    <div className="min-h-screen pb-24 text-neutral-900 dark:text-neutral-100 transition-colors">
+    <div className="w-full pb-16 text-neutral-900 dark:text-neutral-100 transition-colors">
       {/* Bookshelf Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10 pb-6 border-b border-neutral-200 dark:border-neutral-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-3 border-b border-neutral-200 dark:border-neutral-800">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            <span className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
               The Library
             </span>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300">
               {shelfMode === 'diaries' ? `${books.length} Books` : `Year ${selectedYear}`}
             </span>
           </div>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             {shelfMode === 'diaries' 
-              ? 'Your bespoke diaries on display. Add covers and keep writing page by page.' 
-              : 'Daily journal volumes bound from January through December.'}
+              ? 'Your bespoke diaries on display. Drag books to rearrange shelf order.' 
+              : 'Monthly journal volumes bound from January through December.'}
           </p>
         </div>
 
         {/* View Switcher & Action */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           {/* Toggle between 3D Book Covers & Standing Spines */}
           <div className="inline-flex p-1 rounded-xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800">
             <button
@@ -258,46 +375,80 @@ export default function BookshelfView() {
               }`}
             >
               <Library className="w-3.5 h-3.5" />
-              <span>Jan–Dec Spines</span>
+              <span>Journals</span>
             </button>
           </div>
 
           {shelfMode === 'diaries' ? (
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="liquid-glass rounded-xl px-4 py-2 text-xs font-semibold text-neutral-900 dark:text-white hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-sm bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+              onClick={handleOpenCreate}
+              className="rounded-xl px-4 py-2 text-xs font-semibold bg-neutral-900 text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-100 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-md"
             >
               <Plus className="w-4 h-4" />
               <span>New Diary Book</span>
             </button>
           ) : (
-            <select
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(Number(e.target.value))}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-800 dark:text-neutral-200 focus:outline-none"
-            >
-              {[2026, 2025, 2024, 2023].map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
+            <div className="flex items-center gap-1.5 bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl p-1">
+              <button
+                onClick={() => setSelectedYear(prev => prev - 1)}
+                className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition-colors"
+                title="Previous Year"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+              </button>
+
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="px-2 py-0.5 rounded-lg text-xs font-mono font-bold bg-transparent border-none text-neutral-900 dark:text-white focus:outline-none cursor-pointer"
+              >
+                {Array.from({ length: 10 }).map((_, i) => {
+                  const y = new Date().getFullYear() + 2 - i;
+                  return <option key={y} value={y} className="bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white">{y}</option>;
+                })}
+              </select>
+
+              <button
+                onClick={() => setSelectedYear(prev => prev + 1)}
+                className="p-1 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-300 transition-colors"
+                title="Next Year"
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
         </div>
       </div>
 
       {/* VIEW 1: DIARIES SHELVES (Front Covers on Ledges, matching Image 1) */}
       {shelfMode === 'diaries' && (
-        <div className="space-y-16">
+        <div className="space-y-16 mt-12 sm:mt-16 pt-2">
           {/* We group books in rows of 3 per shelf */}
           {Array.from({ length: Math.ceil(books.length / 3) }).map((_, shelfIndex) => {
             const shelfBooks = books.slice(shelfIndex * 3, shelfIndex * 3 + 3);
             return (
-              <div key={shelfIndex} className="relative pt-6">
+              <div key={shelfIndex} className="relative pt-4">
                 {/* Books Row */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4 sm:px-8 mb-[-4px] relative z-10">
                   {shelfBooks.map((book) => {
-                    const bookEntriesCount = entries.filter(e => e.book_id === book.id || e.tags?.includes(book.title)).length;
+                    const isDragging = draggedBookId === book.id;
+                    const isDropTarget = dropTargetBookId === book.id;
+
                     return (
-                      <div key={book.id} className="flex flex-col items-center group">
+                      <div
+                        key={book.id}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, book.id)}
+                        onDragOver={(e) => handleDragOver(e, book.id)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, book.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex flex-col items-center group transition-all duration-200 cursor-grab active:cursor-grabbing ${
+                          isDragging ? 'opacity-40 scale-95' : 'opacity-100'
+                        } ${
+                          isDropTarget ? 'scale-105 ring-2 ring-indigo-500 rounded-lg shadow-2xl' : ''
+                        }`}
+                      >
                         {/* 3D Book Container */}
                         <div 
                           onClick={() => navigate(`/app/book/${book.id}`)}
@@ -310,22 +461,42 @@ export default function BookshelfView() {
                           <img
                             src={book.cover_url || DEFAULT_COVERS[0].cover}
                             alt={book.title}
-                            className="w-full h-full object-cover select-none"
+                            className="w-full h-full object-cover select-none pointer-events-none"
                           />
 
                           {/* Floating Cover Overlay Typography (Editorial Style like Image 1) */}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-black/20 p-5 flex flex-col justify-between pointer-events-none">
                             <div className="flex items-start justify-between">
-                              <span className="text-[10px] tracking-widest uppercase font-mono text-white/80 bg-black/40 px-2 py-0.5 rounded backdrop-blur-sm">
-                                Journify Book
-                              </span>
-                              <button
-                                onClick={(e) => handleDeleteBook(book.id, e)}
-                                title="Delete Book"
-                                className="pointer-events-auto p-1.5 rounded-full bg-black/50 text-white/70 hover:text-red-400 hover:bg-black/75 transition-all opacity-0 group-hover:opacity-100"
+                              {/* Drag Reorder Hint Indicator */}
+                              <div
+                                title="Drag to reorder shelf"
+                                className="pointer-events-auto p-1.5 rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-black/90 transition-all opacity-80 sm:opacity-0 sm:group-hover:opacity-100 flex items-center justify-center cursor-grab active:cursor-grabbing"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                                <GripVertical className="w-3.5 h-3.5" />
+                              </div>
+
+                              <div className="flex items-center gap-1.5 opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                <button
+                                  type="button"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => handleOpenEdit(book, e)}
+                                  title="Edit Title & Cover"
+                                  className="pointer-events-auto p-1.5 rounded-full bg-black/60 text-white/90 hover:text-white hover:bg-black/90 active:scale-95 transition-all z-20 cursor-pointer shadow-md"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onClick={(e) => handleDeleteBook(book.id, e)}
+                                  title="Delete Book"
+                                  className="pointer-events-auto p-1.5 rounded-full bg-black/60 text-white/70 hover:text-red-400 hover:bg-black/90 active:scale-95 transition-all z-20 cursor-pointer shadow-md"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
 
                             <div>
@@ -333,25 +504,12 @@ export default function BookshelfView() {
                                 {book.title}
                               </h3>
                               {book.subtitle && (
-                                <p className="text-xs text-white/75 mt-1 font-sans line-clamp-1 drop-shadow-sm">
+                                <p className="text-xs text-white/75 mt-1 font-sans line-clamp-2 drop-shadow-sm">
                                   {book.subtitle}
                                 </p>
                               )}
-                              <div className="mt-3 flex items-center justify-between text-[11px] text-white/60">
-                                <span>{bookEntriesCount} pages written</span>
-                                <span className="group-hover:text-white transition-colors flex items-center gap-0.5 font-medium">
-                                  Open <ChevronRight className="w-3 h-3" />
-                                </span>
-                              </div>
                             </div>
                           </div>
-                        </div>
-
-                        {/* Title Underneath Ledge */}
-                        <div className="text-center mt-6">
-                          <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-200">
-                            {book.title}
-                          </span>
                         </div>
                       </div>
                     );
@@ -368,10 +526,10 @@ export default function BookshelfView() {
 
       {/* VIEW 2: JAN - DEC DAILY JOURNAL SHELF (Standing Spines, matching Image 2) */}
       {shelfMode === 'daily' && (
-        <div className="mt-12">
-          <div className="relative pt-8 pb-4">
+        <div className="mt-4">
+          <div className="relative pt-6 pb-2">
             {/* Standing Books Spines Row */}
-            <div className="flex items-end justify-center gap-2 sm:gap-4 px-4 overflow-x-auto pb-[-2px] relative z-10 scrollbar-none min-h-[380px]">
+            <div className="flex items-end justify-center gap-2 sm:gap-4 px-4 pt-6 pb-0 overflow-visible relative z-10 min-h-[350px]">
               {MONTHS.map((monthName, idx) => {
                 const monthStyle = SPINE_STYLES[idx % SPINE_STYLES.length];
                 const monthEntries = monthlyEntries[idx] || [];
@@ -380,7 +538,7 @@ export default function BookshelfView() {
                 return (
                   <motion.div
                     key={monthName}
-                    whileHover={{ y: -16, transition: { duration: 0.2 } }}
+                    whileHover={{ y: -16, transition: { duration: 0.2, ease: 'easeOut' } }}
                     onClick={() => navigate(`/app/daily/${selectedYear}/${idx + 1}`)}
                     className={`standing-spine ${monthStyle.bg} w-14 sm:w-16 md:w-20 cursor-pointer h-72 sm:h-80 md:h-92 flex flex-col justify-between py-6 px-2 text-center rounded-t-md relative group border-t border-l border-white/20 select-none`}
                   >
@@ -425,18 +583,26 @@ export default function BookshelfView() {
         </div>
       )}
 
-      {/* Modal: Create New Diary Book */}
+      {/* Modal: Create or Edit Diary Book */}
       <AnimatePresence>
         {showCreateModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-lg bg-white dark:bg-neutral-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white"
+              className="w-full max-w-lg max-h-[90vh] flex flex-col bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white my-auto overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display text-2xl font-bold">New Diary Book</h3>
+              {/* Modal Sticky Header */}
+              <div className="flex items-center justify-between p-6 pb-4 border-b border-neutral-150 dark:border-neutral-800 flex-shrink-0">
+                <div>
+                  <h3 className="font-display text-2xl font-bold">
+                    {editingBook ? 'Edit Diary Cover & Title' : 'New Diary Book'}
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-1">
+                    {editingBook ? 'Update the book title, subtitle, or artwork cover.' : 'Add a new bespoke journal to your library.'}
+                  </p>
+                </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
                   className="p-1.5 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
@@ -445,7 +611,8 @@ export default function BookshelfView() {
                 </button>
               </div>
 
-              <div className="space-y-4">
+              {/* Scrollable Modal Content */}
+              <div className="p-6 overflow-y-auto space-y-4 flex-1 overscroll-contain">
                 <div>
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
                     Book Title
@@ -497,33 +664,70 @@ export default function BookshelfView() {
                   </div>
                 </div>
 
-                <div className="pt-2">
+                {/* Upload from Computer Files */}
+                <div className="pt-2 border-t border-neutral-200 dark:border-neutral-800">
+                  <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                    Upload Custom Cover from Your Computer
+                  </label>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-neutral-100 hover:bg-neutral-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-neutral-800 dark:text-neutral-200 border border-neutral-300 dark:border-neutral-700 transition-colors shadow-sm"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>Choose Computer File</span>
+                    </button>
+                    {newCover && (
+                      <div className="flex items-center gap-2">
+                        <img
+                          src={newCover}
+                          alt="Cover Preview"
+                          className="w-8 h-10 object-cover rounded-sm border border-neutral-300 dark:border-neutral-700 shadow-sm"
+                        />
+                        <span className="text-[11px] text-neutral-500 font-mono">Current preview</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-1">
                   <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 mb-1.5">
-                    Or custom cover image URL
+                    Or paste image URL
                   </label>
                   <input
                     type="url"
-                    value={newCover}
+                    value={newCover.startsWith('data:') ? '' : newCover}
                     onChange={(e) => setNewCover(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
+                    placeholder={newCover.startsWith('data:') ? 'Custom file uploaded' : 'https://images.unsplash.com/...'}
                     className="w-full px-4 py-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs focus:outline-none"
                   />
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-end gap-3">
+              {/* Modal Sticky Footer */}
+              <div className="p-6 pt-3 pb-5 border-t border-neutral-150 dark:border-neutral-800 flex justify-end gap-3 flex-shrink-0 bg-neutral-50/80 dark:bg-neutral-900/80 backdrop-blur-sm">
                 <button
+                  type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                  className="px-5 py-2.5 rounded-xl text-xs font-medium text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-800 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={handleCreateBook}
+                  type="button"
+                  onClick={handleSaveBook}
                   disabled={!newTitle.trim()}
-                  className="px-6 py-2 rounded-xl text-xs font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  className="px-6 py-2.5 rounded-xl text-xs font-semibold bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-50 transition-opacity shadow-md"
                 >
-                  Create Book
+                  {editingBook ? 'Save Changes' : 'Create Book'}
                 </button>
               </div>
             </motion.div>

@@ -74,8 +74,26 @@ export default function NotionCard({ entry, viewType, draggable, onDragStart, on
             {format(new Date(entry.created_at), 'PPP')}
           </div>
           <div className="notion-text text-sm line-clamp-3 pl-7 mb-2">
-            {entry.content.replace(/<[^>]*>/g, '').substring(0, viewType === 'list' ? 160 : 100)}
-            {entry.content.length > (viewType === 'list' ? 160 : 100) ? '...' : ''}
+            {(() => {
+              let raw = entry.content || '';
+              if (raw.trim().startsWith('[')) {
+                try {
+                  const parsed = JSON.parse(raw);
+                  if (Array.isArray(parsed)) {
+                    const texts = parsed
+                      .filter((el: any) => el.type === 'text' || el.type === 'sticky')
+                      .map((el: any) => el.content || '')
+                      .filter(Boolean);
+                    raw = texts.join(' • ');
+                  }
+                } catch {
+                  // fallback
+                }
+              }
+              const clean = raw.replace(/<[^>]*>/g, '').trim();
+              const limit = viewType === 'list' ? 160 : 100;
+              return clean.length > limit ? clean.substring(0, limit) + '...' : clean;
+            })()}
           </div>
           {(entry.tags && entry.tags.length > 0) && (
             <div className="mt-auto flex flex-wrap gap-1.5 pl-7">

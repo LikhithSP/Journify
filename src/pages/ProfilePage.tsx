@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Trash2, Camera, ShieldAlert, Check, AlertTriangle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-// Add a hook to fetch the current user's profile (avatar, name) for sidebar use
+// Hook to fetch current user's profile info
 export function useProfileInfo(userId?: string) {
   const [profile, setProfile] = useState<{ avatar_url?: string; name?: string } | null>(null);
   useEffect(() => {
@@ -31,17 +31,18 @@ export function useProfileInfo(userId?: string) {
 }
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState({
     name: '',
-    tagline: '',
     avatar_url: '',
     email: user?.email || '',
   });
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
+  const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -54,7 +55,6 @@ export default function ProfilePage() {
       if (data) {
         setProfile({
           name: data.username || '',
-          tagline: data.bio || '',
           avatar_url: data.avatar_url || '',
           email: user.email || '',
         });
@@ -63,126 +63,254 @@ export default function ProfilePage() {
     fetchProfile();
   }, [user]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value });
   };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setAvatarFile(e.target.files[0]);
+      const file = e.target.files[0];
+      setAvatarFile(file);
+      // Immediate local preview
+      const previewUrl = URL.createObjectURL(file);
+      setProfile(p => ({ ...p, avatar_url: previewUrl }));
     }
   };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setMessage('');
+    setMessage(null);
     let avatar_url = profile.avatar_url;
+    
     if (avatarFile && user) {
       const { data, error } = await supabase.storage
         .from('avatars')
-        .upload(`${user.id}/${avatarFile.name}`, avatarFile, { upsert: true });
+        .upload(`${user.id}/${Date.now()}_${avatarFile.name}`, avatarFile, { upsert: true });
       if (!error && data) {
         const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(data.path);
         avatar_url = publicData?.publicUrl || avatar_url;
       } else if (error) {
-        setMessage('Failed to upload avatar: ' + error.message);
+        setMessage({ text: 'Failed to upload photo: ' + error.message, type: 'error' });
         setSaving(false);
         return;
       }
     }
+
     if (!user?.id) {
-      setMessage('User not found.');
+      setMessage({ text: 'User not found.', type: 'error' });
       setSaving(false);
       return;
     }
+
     const updates = {
       id: user.id,
       username: profile.name,
-      bio: profile.tagline,
       avatar_url,
     };
+
     const { error } = await supabase.from('profiles').upsert(updates);
     if (!error) {
-      setMessage('Profile updated!');
+      setMessage({ text: 'Profile details saved successfully.', type: 'success' });
       setProfile((p) => ({ ...p, avatar_url }));
     } else {
-      setMessage('Failed to update profile: ' + error.message);
+      setMessage({ text: 'Failed to update profile: ' + error.message, type: 'error' });
       console.error('Supabase profile update error:', error);
     }
     setSaving(false);
   };
 
+  // Delete account function
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    try {
+      setDeleting(true);
+
+      // Clean up user entries and profile from database
+      await supabase.from('journal_entries').delete().eq('user_id', user.id);
+      await supabase.from('profiles').delete().eq('id', user.id);
+
+      // Clear local storage data
+      localStorage.removeItem(`journify_books_${user.id}`);
+
+      // Sign out user
+      await signOut();
+      navigate('/login');
+    } catch (err: any) {
+      console.error('Error deleting account:', err);
+      alert('Could not delete account. Please try again.');
+      setDeleting(false);
+    }
+  };
+
   return (
-    <div className="max-w-lg mx-auto p-6 bg-white dark:bg-gray-900 rounded-lg shadow">
-      <button
-        type="button"
-        className="mb-4 flex items-center text-gray-500 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
-        onClick={() => navigate('/')}
-      >
-        <ArrowLeft className="w-5 h-5 mr-1" />
-        Back to Dashboard
-      </button>
-      <h2 className="text-2xl font-bold mb-6">Profile</h2>
-      <form onSubmit={handleSave} className="space-y-5">
-        <div className="flex flex-col items-center mb-4">
-          <label htmlFor="avatar-upload" className="cursor-pointer group">
-            <img
-              src={profile.avatar_url || '/journal.svg'}
-              alt="Profile"
-              className="w-24 h-24 rounded-full object-cover border mb-2 group-hover:opacity-80 transition-opacity"
-            />
-            <input
-              id="avatar-upload"
-              type="file"
-              accept="image/*"
-              onChange={handleAvatarChange}
-              className="hidden"
-            />
-            <span className="block text-xs text-gray-400 group-hover:text-blue-500 text-center">Click to change</span>
-          </label>
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Name</label>
-          <input
-            type="text"
-            name="name"
-            value={profile.name}
-            onChange={handleInputChange}
-            className="input w-full"
-            required
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Tagline</label>
-          <input
-            type="text"
-            name="tagline"
-            value={profile.tagline}
-            onChange={handleInputChange}
-            className="input w-full"
-            placeholder="A short description for your journal"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            type="email"
-            name="email"
-            value={profile.email}
-            disabled
-            className="input w-full bg-gray-100 dark:bg-gray-800 cursor-not-allowed"
-          />
-        </div>
+    <div className="max-w-xl mx-auto py-6 text-neutral-900 dark:text-neutral-100 animate-in fade-in duration-300">
+      {/* Back button */}
+      <div className="mb-6 flex items-center justify-between">
         <button
-          type="submit"
-          className="btn btn-primary w-full mt-4"
-          disabled={saving}
+          type="button"
+          onClick={() => navigate('/app/library')}
+          className="inline-flex items-center gap-2 text-xs font-semibold text-neutral-500 hover:text-neutral-900 dark:hover:text-white transition-colors p-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800"
         >
-          {saving ? 'Saving...' : 'Save Changes'}
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Library</span>
         </button>
-        {message && <div className="text-center text-green-600 dark:text-green-400 mt-2">{message}</div>}
-      </form>
+      </div>
+
+      {/* Main Profile Card */}
+      <div className="rounded-3xl bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800/80 shadow-xl p-8 sm:p-10 mb-8 backdrop-blur-xl">
+        <div className="mb-6 pb-4 border-b border-neutral-150 dark:border-neutral-800/80">
+          <h1 className="font-display text-2xl sm:text-3xl font-bold tracking-tight text-neutral-900 dark:text-white">
+            Profile Settings
+          </h1>
+          <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            Manage your personal identity, avatar, and account credentials.
+          </p>
+        </div>
+
+        <form onSubmit={handleSave} className="space-y-6">
+          {/* Avatar Upload with Camera Badge */}
+          <div className="flex flex-col items-center justify-center mb-6">
+            <label htmlFor="avatar-upload" className="cursor-pointer group relative">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-neutral-200 dark:border-neutral-700 group-hover:border-black dark:group-hover:border-white transition-all shadow-md">
+                <img
+                  src={profile.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
+                  alt="Profile"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+
+              <div className="absolute bottom-0 right-0 p-2 rounded-full bg-black text-white dark:bg-white dark:text-black shadow-md border-2 border-white dark:border-neutral-900 group-hover:scale-110 transition-transform">
+                <Camera className="w-3.5 h-3.5" />
+              </div>
+
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarChange}
+                className="hidden"
+              />
+            </label>
+            <span className="text-[11px] font-mono text-neutral-400 mt-2.5">
+              Click photo to change avatar
+            </span>
+          </div>
+
+          {/* Form Fields: Name & Email */}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider font-mono mb-1.5">
+                Display Name
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={profile.name}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2.5 rounded-xl bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white transition-all text-neutral-900 dark:text-white"
+                placeholder="Your name"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-neutral-700 dark:text-neutral-300 uppercase tracking-wider font-mono mb-1.5">
+                Email Address
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={profile.email}
+                disabled
+                className="w-full px-4 py-2.5 rounded-xl bg-neutral-100 dark:bg-neutral-850/50 border border-neutral-200 dark:border-neutral-800 text-sm text-neutral-500 dark:text-neutral-400 cursor-not-allowed font-mono text-xs"
+              />
+              <span className="text-[11px] text-neutral-400 mt-1 block">
+                Your email is linked to your authentication account.
+              </span>
+            </div>
+          </div>
+
+          {message && (
+            <div className={`p-3 rounded-xl text-xs flex items-center gap-2 ${message.type === 'success' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20'}`}>
+              <Check className="w-4 h-4 flex-shrink-0" />
+              <span>{message.text}</span>
+            </div>
+          )}
+
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full py-3 rounded-xl text-xs font-semibold uppercase tracking-wider bg-black text-white dark:bg-white dark:text-black hover:opacity-90 active:scale-[0.99] transition-all shadow-md disabled:opacity-50"
+          >
+            {saving ? 'Saving changes...' : 'Save Profile Changes'}
+          </button>
+        </form>
+      </div>
+
+      {/* Danger Zone: Delete Account */}
+      <div className="rounded-3xl bg-red-50/50 dark:bg-red-950/10 border border-red-200/80 dark:border-red-900/40 p-6 sm:p-8">
+        <div className="flex items-start justify-between gap-4 flex-col sm:flex-row sm:items-center">
+          <div>
+            <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <ShieldAlert className="w-4 h-4" />
+              <h3 className="text-sm font-semibold uppercase tracking-wider font-mono">
+                Danger Zone
+              </h3>
+            </div>
+            <p className="text-xs text-neutral-600 dark:text-neutral-400 mt-1">
+              Permanently delete your account, journals, and all personal reflections.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowDeleteModal(true)}
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 active:scale-95 transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            <span>Delete Account</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-white dark:bg-[#18181b] border border-neutral-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 rounded-2xl bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 flex items-center justify-center mb-4">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+
+            <h3 className="font-display text-xl font-bold text-neutral-900 dark:text-white">
+              Delete your account?
+            </h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-2 leading-relaxed">
+              This action cannot be undone. All of your diary books, daily pages, memories, and photos will be permanently erased.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleDeleteAccount}
+                className="px-4 py-2 rounded-xl text-xs font-semibold bg-red-600 text-white hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Yes, Delete Everything'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+

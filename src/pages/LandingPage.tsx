@@ -46,11 +46,11 @@ export default function LandingPage({ onBeginJourney }: LandingPageProps) {
             Sign In
           </Link>
           <Link
-            to="/login"
+            to="/register"
             onClick={onBeginJourney}
             className="liquid-glass rounded-full px-4 py-1.5 text-xs font-semibold text-white hover:scale-[1.03] active:scale-[0.98] transition-all flex items-center gap-1.5 group shadow-sm bg-white/[0.08]"
           >
-            <span>Begin Journey</span>
+            <span>Create Account</span>
             <ArrowRight className="w-3 h-3 text-white/80 group-hover:translate-x-0.5 transition-transform" />
           </Link>
         </div>
@@ -81,7 +81,7 @@ export default function LandingPage({ onBeginJourney }: LandingPageProps) {
               onClick={onBeginJourney}
               className="liquid-glass rounded-full px-8 py-3.5 text-sm font-semibold text-white hover:scale-[1.03] active:scale-[0.98] cursor-pointer inline-flex items-center gap-2.5 transition-all duration-200 tracking-[-0.01em] shadow-2xl bg-white/[0.08]"
             >
-              <span>Start Journaling Free</span>
+              <span>Start Journaling</span>
               <ArrowRight className="w-4 h-4 text-white group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
@@ -91,10 +91,6 @@ export default function LandingPage({ onBeginJourney }: LandingPageProps) {
       {/* Bottom Editorial Accent Bar */}
       <footer className="relative z-10 w-full max-w-7xl mx-auto px-6 sm:px-10 pb-7 flex items-center justify-between text-xs text-white/40">
         <div>© 2026 Journify. All reflections protected.</div>
-        <div className="flex items-center gap-6">
-          <span className="hover:text-white/70 transition-colors cursor-pointer">Supabase Encrypted</span>
-          <span className="hover:text-white/70 transition-colors cursor-pointer">Offline First</span>
-        </div>
       </footer>
     </div>
   );

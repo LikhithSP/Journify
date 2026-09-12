@@ -240,7 +240,7 @@
 /* Book Spine for Shelf View (Standing Books) */
 .standing-spine {
   position: relative;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 
     -4px 4px 10px rgba(0, 0, 0, 0.2),
     inset 2px 0 3px rgba(255, 255, 255, 0.25),
@@ -249,11 +249,108 @@
 }
 
 .standing-spine:hover {
-  transform: translateY(-12px) scale(1.03);
   box-shadow: 
     -6px 12px 22px rgba(0, 0, 0, 0.35),
     inset 2px 0 3px rgba(255, 255, 255, 0.35),
     inset -2px 0 3px rgba(0, 0, 0, 0.3);
 }
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Open Book Spread & Scrapbooking Texture Styling */
+.open-journal-spread {
+  background: #fdfbf7;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.08),
+    inset 0 0 40px rgba(0, 0, 0, 0.04);
+  border-radius: 16px;
+  position: relative;
+}
+
+.dark .open-journal-spread {
+  background: #1c1b1f;
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 0 40px rgba(0, 0, 0, 0.4);
+}
+
+/* Middle Book Crease / Valley */
+.journal-center-spine {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 32px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 0, 0, 0.08) 35%, 
+    rgba(0, 0, 0, 0.18) 50%, 
+    rgba(0, 0, 0, 0.08) 65%, 
+    transparent 100%
+  );
+  pointer-events: none;
+  z-index: 20;
+}
+
+.dark .journal-center-spine {
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(0, 0, 0, 0.35) 35%, 
+    rgba(0, 0, 0, 0.6) 50%, 
+    rgba(0, 0, 0, 0.35) 65%, 
+    transparent 100%
+  );
+}
+
+/* Grid & Lined Notebook Patterns */
+.paper-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+.dark .paper-grid {
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+}
+
+.paper-lined {
+  background-size: 100% 28px;
+  background-image: linear-gradient(to bottom, transparent 27px, rgba(0, 0, 0, 0.07) 28px);
+}
+
+.dark .paper-lined {
+  background-image: linear-gradient(to bottom, transparent 27px, rgba(255, 255, 255, 0.06) 28px);
+}
+
+/* Polaroid & Scrapbook Elements */
+.polaroid-card {
+  background: #ffffff;
+  padding: 10px 10px 24px 10px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 2px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 4px;
+  position: relative;
+}
+
+.washi-tape {
+  background: rgba(254, 240, 138, 0.7);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(1px);
+}
+
 
 

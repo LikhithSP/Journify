@@ -212,11 +212,125 @@ export default function EntryPage() {
           </div>
         )}
 
-        {/* Entry content */}
-        <div 
-          className="prose prose-lg dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: entry.content }}
-        />
+        {/* Entry content: Check if scrapbook elements or classic HTML */}
+        {(() => {
+          let scrapbookElements: any[] | null = null;
+          if (entry.content && entry.content.trim().startsWith('[')) {
+            try {
+              const parsed = JSON.parse(entry.content);
+              if (Array.isArray(parsed)) {
+                scrapbookElements = parsed;
+              }
+            } catch {
+              scrapbookElements = null;
+            }
+          }
+
+          if (scrapbookElements) {
+            return (
+              <div className="mt-6">
+                {/* Journal Spread View Matching Physical Notebook */}
+                <div className="relative w-full aspect-[16/10] min-h-[580px] rounded-2xl bg-[#111113] border border-white/10 shadow-2xl overflow-hidden">
+                  {/* Spine Crease */}
+                  <div className="journal-center-spine" />
+
+                  {/* Header Stamps */}
+                  <div className="absolute top-4 left-6 right-6 flex items-center justify-between text-[11px] font-mono tracking-widest text-neutral-400 uppercase pointer-events-none z-10">
+                    <div className="w-1/2 pr-6 flex justify-between">
+                      <span>{format(new Date(entry.created_at), 'MMM yyyy').toUpperCase()}</span>
+                      <span>JOURNIFY SPREAD</span>
+                    </div>
+                    <div className="w-1/2 pl-8 flex justify-between">
+                      <span>PAGE 1 - 2</span>
+                      <span>@{user?.user_metadata?.full_name || 'JOURNIFY'}</span>
+                    </div>
+                  </div>
+
+                  {/* Elements Display */}
+                  {scrapbookElements.map((elem) => {
+                    return (
+                      <div
+                        key={elem.id}
+                        style={{
+                          left: `${elem.x}%`,
+                          top: `${elem.y}%`,
+                          width: elem.width ? `${elem.width}px` : undefined,
+                          transform: `rotate(${elem.rotation || 0}deg)`,
+                          fontFamily: elem.fontFamily || "'Patrick Hand', cursive",
+                        }}
+                        className="absolute select-text z-30 transition-transform hover:scale-[1.02] duration-150"
+                      >
+                        {/* Washi Tape Accent */}
+                        {(elem.type === 'sticky' || elem.type === 'image') && (
+                          <div className="washi-tape absolute -top-3 left-1/2 -translate-x-1/2 w-14 h-4 -rotate-2 rounded-xs pointer-events-none z-40" />
+                        )}
+
+                        {/* 1. TEXT BLOCK */}
+                        {elem.type === 'text' && (
+                          <div 
+                            style={{ 
+                              fontSize: `${elem.fontSize || 22}px`,
+                              width: elem.width ? `${elem.width}px` : undefined,
+                              minWidth: '180px',
+                              maxWidth: '520px'
+                            }}
+                            className="p-3 text-neutral-900 dark:text-neutral-100 leading-relaxed whitespace-pre-wrap font-inherit select-text"
+                          >
+                            {elem.content}
+                          </div>
+                        )}
+
+                        {/* 2. STICKY NOTE */}
+                        {elem.type === 'sticky' && (
+                          <div
+                            style={{ 
+                              backgroundColor: elem.color || '#fef08a',
+                              width: elem.width ? `${elem.width}px` : undefined,
+                            }}
+                            className="p-5 w-56 sm:w-64 shadow-xl rounded-xs text-neutral-900 text-base leading-snug whitespace-pre-wrap font-inherit select-text"
+                          >
+                            {elem.content}
+                          </div>
+                        )}
+
+                        {/* 3. POLAROID PICTURE */}
+                        {elem.type === 'image' && (
+                          <div className="polaroid-card w-44 sm:w-56 shadow-2xl">
+                            <img
+                              src={elem.content}
+                              alt="Journal Pic"
+                              className="w-full aspect-[4/3] object-cover rounded-xs"
+                            />
+                            <div className="mt-2.5 text-center text-[11px] text-neutral-500 font-mono tracking-tight">
+                              memories.jpg
+                            </div>
+                          </div>
+                        )}
+
+                        {/* 4. STICKER EMOJI */}
+                        {elem.type === 'sticker' && (
+                          <div 
+                            style={{ fontSize: `${elem.fontSize || 40}px` }}
+                            className="filter drop-shadow-md p-1 select-none"
+                          >
+                            {elem.content}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div 
+              className="prose prose-lg dark:prose-invert max-w-none"
+              dangerouslySetInnerHTML={{ __html: entry.content }}
+            />
+          );
+        })()}
 
         {/* Location and weather would appear here */}
         
