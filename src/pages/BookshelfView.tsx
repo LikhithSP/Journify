@@ -528,8 +528,8 @@ export default function BookshelfView() {
       {shelfMode === 'daily' && (
           <div className="mt-4">
           <div className="relative pt-6 pb-2">
-            {/* Standing Books Spines Row — horizontal scroll on mobile */}
-            <div className="spines-scroll-container flex items-end justify-start sm:justify-center gap-1.5 sm:gap-2 md:gap-4 px-2 sm:px-4 pt-6 pb-0 overflow-x-auto relative z-10 min-h-[280px] sm:min-h-[350px]">
+            {/* Standing Books Spines Row — all 12 months fitted cleanly across shelf */}
+            <div className="spines-scroll-container no-scrollbar scrollbar-none flex items-end justify-between sm:justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-3.5 px-1 sm:px-3 pt-6 pb-0 overflow-x-auto relative z-10 min-h-[280px] sm:min-h-[350px]">
               {MONTHS.map((monthName, idx) => {
                 const monthStyle = SPINE_STYLES[idx % SPINE_STYLES.length];
                 const monthEntries = monthlyEntries[idx] || [];
@@ -540,30 +540,30 @@ export default function BookshelfView() {
                     key={monthName}
                     whileHover={{ y: -16, transition: { duration: 0.2, ease: 'easeOut' } }}
                     onClick={() => navigate(`/app/daily/${selectedYear}/${idx + 1}`)}
-                    className={`standing-spine ${monthStyle.bg} w-10 sm:w-14 md:w-20 cursor-pointer h-52 sm:h-72 md:h-92 flex flex-col justify-between py-4 sm:py-6 px-1.5 sm:px-2 text-center rounded-t-md relative group border-t border-l border-white/20 select-none flex-shrink-0`}
+                    className={`standing-spine ${monthStyle.bg} flex-1 min-w-[28px] max-w-[72px] cursor-pointer h-52 sm:h-72 md:h-88 flex flex-col justify-between py-3 sm:py-5 px-1 sm:px-1.5 text-center rounded-t-md relative group border-t border-l border-white/20 select-none flex-shrink`}
                   >
                     {/* Top Spine Bookmark Accent */}
-                      <div className="flex flex-col items-center">
-                        <div className={`w-1.5 h-3 sm:w-2 sm:h-4 ${monthStyle.accent} rounded-b-sm mb-1.5 sm:mb-2 opacity-90 shadow-sm`} />
-                        <span className="text-[9px] sm:text-[10px] font-mono tracking-widest uppercase opacity-75">
+                    <div className="flex flex-col items-center">
+                      <div className={`w-1.5 h-3 sm:w-2 sm:h-4 ${monthStyle.accent} rounded-b-sm mb-1.5 sm:mb-2 opacity-90 shadow-sm`} />
+                      <span className="text-[8px] sm:text-[10px] font-mono tracking-widest uppercase opacity-75 hidden xs:inline">
                         {selectedYear}
                       </span>
                     </div>
 
-                      {/* Vertical Month & Title (Editorial Spine Typography like Image 2) */}
-                      <div className="flex-1 flex flex-col items-center justify-center my-2 sm:my-4">
-                        <div 
-                          className="writing-vertical text-xs sm:text-sm md:text-base font-display font-bold tracking-[0.2em] uppercase transform rotate-180"
-                          style={{ writingMode: 'vertical-rl' }}
-                        >
+                    {/* Vertical Month & Title (Editorial Spine Typography like Image 2) */}
+                    <div className="flex-1 flex flex-col items-center justify-center my-1.5 sm:my-3">
+                      <div 
+                        className="writing-vertical text-[11px] sm:text-xs md:text-sm lg:text-base font-display font-bold tracking-[0.15em] sm:tracking-[0.2em] uppercase transform rotate-180"
+                        style={{ writingMode: 'vertical-rl' }}
+                      >
                         {monthName}
                       </div>
                     </div>
 
                     {/* Bottom Volume Info */}
-                    <div className="flex flex-col items-center text-[10px] opacity-75 font-mono">
-                      <span className="font-semibold text-xs">{pageCount}</span>
-                      <span className="text-[9px] uppercase">Entries</span>
+                    <div className="flex flex-col items-center text-[9px] sm:text-[10px] opacity-75 font-mono">
+                      <span className="font-semibold text-[10px] sm:text-xs">{pageCount}</span>
+                      <span className="text-[8px] sm:text-[9px] uppercase tracking-wider">Entries</span>
                     </div>
 
                     {/* Subtle Spine Texture Overlay */}

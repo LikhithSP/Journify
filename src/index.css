@@ -353,6 +353,17 @@
   backdrop-filter: blur(1px);
 }
 
+/* Spine standing books: hide scrollbars across all screen sizes while preserving scroll functionality */
+.spines-scroll-container {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
+}
+.spines-scroll-container::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge, Opera */
+  width: 0;
+  height: 0;
+}
+
 /* Mobile: canvas touch scrolling */
 @media (max-width: 767px) {
   .open-journal-spread {
@@ -368,13 +379,8 @@
     display: none !important;
   }
 
-  /* Spine standing books: horizontal scroll container */
+  /* Spine standing books: horizontal scroll touch behavior */
   .spines-scroll-container {
-    overflow-x: auto;
     -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .spines-scroll-container::-webkit-scrollbar {
-    display: none;
   }
 }
