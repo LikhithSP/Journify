@@ -21,6 +21,8 @@ import { OfflineDB } from '../services/offlineDB';
 import Dashboard from '../pages/Dashboard';
 import OfflineSyncBanner from './OfflineSyncBanner';
 import GlobalSearchModal from './GlobalSearchModal';
+import InAppNotificationToast from './InAppNotificationToast';
+import { NotificationService } from '../services/notificationService';
 import type { JournalEntry } from '../types/journal';
 
 export default function Layout() {
@@ -59,6 +61,21 @@ export default function Layout() {
     }
     loadSearchData();
   }, [user, location.pathname]);
+
+  // Start Notification Scheduler (evaluates daily, custom, missed, and streak reminders)
+  useEffect(() => {
+    const getLastDate = () => {
+      if (searchEntries.length === 0) return null;
+      return searchEntries[0]?.created_at || null;
+    };
+    const getStreak = () => {
+      // Calculate simple consecutive day streak
+      return Math.min(searchEntries.length, 7);
+    };
+
+    const stopScheduler = NotificationService.startScheduler(getLastDate, getStreak);
+    return () => stopScheduler();
+  }, [searchEntries]);
 
   // Derived tags & moods for search
   const availableTags = Array.from(new Set(searchEntries.flatMap((e) => e.tags || []))).sort();
@@ -310,6 +327,9 @@ export default function Layout() {
         availableTags={availableTags}
         availableMoods={availableMoods}
       />
+
+      {/* In-App Notification Toast */}
+      <InAppNotificationToast />
     </div>
   );
 }

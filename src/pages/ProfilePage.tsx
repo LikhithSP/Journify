@@ -12,10 +12,15 @@ import {
   FileCheck2,
   Lock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Bell,
+  Flame,
+  Clock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { validateFileUpload, sanitizeUploadFileName, SECURITY_SPECS } from '../lib/security';
+import { NotificationService } from '../services/notificationService';
+import type { NotificationSettings } from '../services/notificationService';
 
 export function useProfileInfo(userId?: string) {
   const [profile, setProfile] = useState<{ avatar_url?: string; name?: string } | null>(null);
@@ -53,11 +58,19 @@ export default function ProfilePage() {
     email: user?.email || '',
   });
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'data'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'data'>('profile');
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  // Notification settings state
+  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(() => {
+    return NotificationService.getSettings();
+  });
+  const [notifPermission, setNotifPermission] = useState<string>(() => {
+    return typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'default';
+  });
 
   // Security tab state
   const [newPassword, setNewPassword] = useState('');
@@ -304,6 +317,16 @@ export default function ProfilePage() {
               Security & Sessions
             </button>
             <button
+              onClick={() => setActiveTab('notifications')}
+              className={`pb-3 border-b-2 transition-colors ${
+                activeTab === 'notifications'
+                  ? 'border-black dark:border-white text-black dark:text-white font-semibold'
+                  : 'border-transparent text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+              }`}
+            >
+              Notifications & Habits
+            </button>
+            <button
               onClick={() => setActiveTab('data')}
               className={`pb-3 border-b-2 transition-colors ${
                 activeTab === 'data'
@@ -537,7 +560,300 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Tab 3: Data Export & Danger Zone */}
+        {/* Tab: Notifications & Habits Configuration */}
+        {activeTab === 'notifications' && (
+          <div className="p-6 space-y-8">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                  <Bell size={16} className="mr-2 text-gray-500" />
+                  Journaling Habit & Notification System
+                </h3>
+                {notifPermission !== 'granted' && (
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const res = await NotificationService.requestPermission();
+                      setNotifPermission(res);
+                      if (res === 'granted') {
+                        NotificationService.trigger('Journify Notifications Enabled!', {
+                          body: 'You will receive reminders according to your schedule.',
+                        });
+                      }
+                    }}
+                    className="py-1 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-semibold hover:opacity-90 transition"
+                  >
+                    Enable Browser Notifications
+                  </button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+                Configure your daily check-ins, custom reminders, missed-journal nudges, and milestone celebrations.
+              </p>
+            </div>
+
+            {/* Master Toggle */}
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-800/40 flex items-center justify-between">
+              <div>
+                <span className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                  Global Notifications
+                </span>
+                <p className="text-[11px] text-gray-500">
+                  Turn all journaling notifications and audio alerts on or off.
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={notificationSettings.enabled}
+                onChange={(e) => {
+                  const updated = { ...notificationSettings, enabled: e.target.checked };
+                  setNotificationSettings(updated);
+                  NotificationService.saveSettings(updated);
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+              />
+            </div>
+
+            {/* Daily Reminder */}
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <Clock size={16} className="text-gray-500" />
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">Daily Writing Reminder</h4>
+                    <p className="text-[11px] text-gray-500">Regular reminder at your preferred journaling time.</p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.dailyReminder.enabled}
+                  onChange={(e) => {
+                    const updated = {
+                      ...notificationSettings,
+                      dailyReminder: { ...notificationSettings.dailyReminder, enabled: e.target.checked },
+                    };
+                    setNotificationSettings(updated);
+                    NotificationService.saveSettings(updated);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                />
+              </div>
+
+              {notificationSettings.dailyReminder.enabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Reminder Time</label>
+                    <input
+                      type="time"
+                      value={notificationSettings.dailyReminder.time}
+                      onChange={(e) => {
+                        const updated = {
+                          ...notificationSettings,
+                          dailyReminder: { ...notificationSettings.dailyReminder, time: e.target.value },
+                        };
+                        setNotificationSettings(updated);
+                        NotificationService.saveSettings(updated);
+                      }}
+                      className="w-full p-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Custom Message</label>
+                    <input
+                      type="text"
+                      value={notificationSettings.dailyReminder.message}
+                      onChange={(e) => {
+                        const updated = {
+                          ...notificationSettings,
+                          dailyReminder: { ...notificationSettings.dailyReminder, message: e.target.value },
+                        };
+                        setNotificationSettings(updated);
+                        NotificationService.saveSettings(updated);
+                      }}
+                      className="w-full p-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Reminder */}
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <Clock size={16} className="text-gray-500" />
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">Custom Reminder</h4>
+                    <p className="text-[11px] text-gray-500">Secondary check-in (e.g. midday reflection or morning intent).</p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.customReminder.enabled}
+                  onChange={(e) => {
+                    const updated = {
+                      ...notificationSettings,
+                      customReminder: { ...notificationSettings.customReminder, enabled: e.target.checked },
+                    };
+                    setNotificationSettings(updated);
+                    NotificationService.saveSettings(updated);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                />
+              </div>
+
+              {notificationSettings.customReminder.enabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Reminder Time</label>
+                    <input
+                      type="time"
+                      value={notificationSettings.customReminder.time}
+                      onChange={(e) => {
+                        const updated = {
+                          ...notificationSettings,
+                          customReminder: { ...notificationSettings.customReminder, time: e.target.value },
+                        };
+                        setNotificationSettings(updated);
+                        NotificationService.saveSettings(updated);
+                      }}
+                      className="w-full p-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Custom Message</label>
+                    <input
+                      type="text"
+                      value={notificationSettings.customReminder.message}
+                      onChange={(e) => {
+                        const updated = {
+                          ...notificationSettings,
+                          customReminder: { ...notificationSettings.customReminder, message: e.target.value },
+                        };
+                        setNotificationSettings(updated);
+                        NotificationService.saveSettings(updated);
+                      }}
+                      className="w-full p-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Missed-Journal Reminder */}
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <Bell size={16} className="text-amber-500" />
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">Missed-Journal Nudge</h4>
+                    <p className="text-[11px] text-gray-500">“You haven't written today. Want to take 5 minutes?”</p>
+                  </div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={notificationSettings.missedJournalReminder.enabled}
+                  onChange={(e) => {
+                    const updated = {
+                      ...notificationSettings,
+                      missedJournalReminder: { ...notificationSettings.missedJournalReminder, enabled: e.target.checked },
+                    };
+                    setNotificationSettings(updated);
+                    NotificationService.saveSettings(updated);
+                  }}
+                  className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                />
+              </div>
+
+              {notificationSettings.missedJournalReminder.enabled && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Trigger if unwritten by hour (24-hr)</label>
+                    <select
+                      value={notificationSettings.missedJournalReminder.cutoffHour}
+                      onChange={(e) => {
+                        const updated = {
+                          ...notificationSettings,
+                          missedJournalReminder: {
+                            ...notificationSettings.missedJournalReminder,
+                            cutoffHour: parseInt(e.target.value, 10),
+                          },
+                        };
+                        setNotificationSettings(updated);
+                        NotificationService.saveSettings(updated);
+                      }}
+                      className="w-full p-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
+                    >
+                      <option value={19}>7:00 PM</option>
+                      <option value={20}>8:00 PM</option>
+                      <option value={21}>9:00 PM</option>
+                      <option value={22}>10:00 PM</option>
+                      <option value={23}>11:00 PM</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-1">Reminder Copy</label>
+                    <input
+                      type="text"
+                      value={notificationSettings.missedJournalReminder.message}
+                      onChange={(e) => {
+                        const updated = {
+                          ...notificationSettings,
+                          missedJournalReminder: { ...notificationSettings.missedJournalReminder, message: e.target.value },
+                        };
+                        setNotificationSettings(updated);
+                        NotificationService.saveSettings(updated);
+                      }}
+                      className="w-full p-1.5 text-xs rounded border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-900 text-gray-900 dark:text-gray-100"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Streak Milestone Notification */}
+            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <div className="flex items-center space-x-2.5">
+                <Flame size={16} className="text-orange-500" />
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">Streak Celebration & Protection</h4>
+                  <p className="text-[11px] text-gray-500">Celebrate 3, 7, 14, 30, and 100-day streaks automatically.</p>
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={notificationSettings.streakNotifications.enabled}
+                onChange={(e) => {
+                  const updated = {
+                    ...notificationSettings,
+                    streakNotifications: { ...notificationSettings.streakNotifications, enabled: e.target.checked },
+                  };
+                  setNotificationSettings(updated);
+                  NotificationService.saveSettings(updated);
+                }}
+                className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+              />
+            </div>
+
+            {/* Test Notification Trigger */}
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  NotificationService.trigger('Test Notification', {
+                    body: "You haven't written today. Want to take 5 minutes?",
+                  });
+                  setStatusMessage({ text: 'Test notification triggered!', type: 'success' });
+                }}
+                className="py-1.5 px-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-neutral-800 text-xs font-medium transition"
+              >
+                Send Test Notification
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 4: Data Export & Danger Zone */}
         {activeTab === 'data' && (
           <div className="p-6 space-y-8">
             {/* GDPR Data Export */}
