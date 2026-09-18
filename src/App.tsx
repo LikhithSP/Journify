@@ -8,10 +8,12 @@ import Layout from './components/Layout.tsx';
 import { supabase } from './lib/supabase';
 
 // High-Performance Route-Level Code Splitting
+const LandingPage = lazy(() => import('./pages/LandingPage.tsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.tsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.tsx'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.tsx'));
-const Dashboard = lazy(() => import('./pages/Dashboard.tsx'));
+const HomeDashboard = lazy(() => import('./pages/HomeDashboard.tsx'));
+const JournalsPage = lazy(() => import('./pages/JournalsPage.tsx'));
 const EntryPage = lazy(() => import('./pages/EntryPage.tsx'));
 const NewEntryPage = lazy(() => import('./pages/NewEntryPage.tsx'));
 const EditEntryPage = lazy(() => import('./pages/EditEntryPage.tsx'));
@@ -25,7 +27,7 @@ function PageLoadingFallback() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 space-y-4">
       <div className="w-8 h-8 border-2 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
-      <span className="text-xs text-gray-400 font-medium">Loading view...</span>
+      <span className="text-xs text-gray-400 font-medium">Loading...</span>
     </div>
   );
 }
@@ -36,14 +38,12 @@ function App() {
 
   useEffect(() => {
     setLoading(true);
-    
-    // Check active sessions and set the user
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    // Listen for auth changes (including recovery token callbacks)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -71,21 +71,28 @@ function App() {
           <Suspense fallback={<PageLoadingFallback />}>
             <AnimatePresence mode="wait">
               <Routes>
-                {/* Public & Authentication Routes */}
-                <Route path="/login" element={!session ? <LoginPage /> : <Navigate to="/" />} />
-                <Route path="/register" element={!session ? <RegisterPage /> : <Navigate to="/" />} />
+                {/* Public landing page — shown to unauthenticated users at / */}
+                <Route
+                  path="/"
+                  element={session ? <Navigate to="/home" replace /> : <LandingPage />}
+                />
+
+                {/* Auth routes */}
+                <Route path="/login" element={!session ? <LoginPage /> : <Navigate to="/home" />} />
+                <Route path="/register" element={!session ? <RegisterPage /> : <Navigate to="/home" />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
-                
-                {/* Protected Routes */}
+
+                {/* Protected app routes — all under Layout */}
                 <Route path="/" element={session ? <Layout /> : <Navigate to="/login" />}>
-                  <Route index element={<Dashboard />} />
-                  <Route path="/entry/new" element={<NewEntryPage />} />
-                  <Route path="/entry/:id" element={<EntryPage />} />
-                  <Route path="/entry/:id/edit" element={<EditEntryPage />} />
-                  <Route path="/calendar" element={<CalendarPage />} />
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/privacy" element={<PrivacyCenterPage />} />
-                  <Route path="/folder/:folderId" element={<FolderDashboard />} />
+                  <Route path="home" element={<HomeDashboard />} />
+                  <Route path="journals" element={<JournalsPage />} />
+                  <Route path="entry/new" element={<NewEntryPage />} />
+                  <Route path="entry/:id" element={<EntryPage />} />
+                  <Route path="entry/:id/edit" element={<EditEntryPage />} />
+                  <Route path="calendar" element={<CalendarPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="privacy" element={<PrivacyCenterPage />} />
+                  <Route path="folder/:folderId" element={<FolderDashboard />} />
                 </Route>
               </Routes>
             </AnimatePresence>

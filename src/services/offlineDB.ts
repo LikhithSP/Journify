@@ -196,6 +196,58 @@ export class OfflineDB {
     });
   }
 
+  // --- Folders Store Methods ---
+
+  public static async getAllFolders(userId: string): Promise<any[]> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('folders', 'readonly');
+      const store = tx.objectStore('folders');
+      const index = store.index('user_id');
+      const request = index.getAll(userId);
+
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  public static async putFolder(folder: any): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('folders', 'readwrite');
+      const store = tx.objectStore('folders');
+      const request = store.put(folder);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  public static async putFoldersBatch(folders: any[]): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('folders', 'readwrite');
+      const store = tx.objectStore('folders');
+      folders.forEach((folder) => {
+        store.put(folder);
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
+
+  public static async deleteFolder(id: string): Promise<void> {
+    const db = await this.getDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('folders', 'readwrite');
+      const store = tx.objectStore('folders');
+      const request = store.delete(id);
+
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  }
+
   public static async clearAll(): Promise<void> {
     const db = await this.getDB();
     const storeNames = ['entries', 'sync_queue', 'folders'];
