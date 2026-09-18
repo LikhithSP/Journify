@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
-  Plus, Tag, Search, X, Smile, ArchiveX, FilterX
+  Plus, Tag, Search, X, Smile, ArchiveX, FilterX, Calendar as CalendarIcon
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
@@ -173,6 +173,14 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
         <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
         <div className="flex items-center space-x-3 flex-wrap gap-2">
+          <Link
+            to="/calendar"
+            className="notion-button flex items-center bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-neutral-700 transition"
+          >
+            <CalendarIcon size={14} className="mr-1.5" />
+            <span>Calendar & Timeline</span>
+          </Link>
+
           <Link
             to="/entry/new"
             className="notion-button flex items-center bg-black text-white dark:bg-white dark:text-black px-4 py-1.5 rounded-md text-sm font-medium hover:opacity-90 transition-opacity"

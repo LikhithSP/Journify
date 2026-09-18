@@ -14,6 +14,7 @@ import EditEntryPage from './pages/EditEntryPage.tsx';
 import Layout from './components/Layout.tsx';
 import { supabase } from './lib/supabase';
 import ProfilePage from './pages/ProfilePage.tsx';
+import CalendarPage from './pages/CalendarPage.tsx';
 import FolderDashboard from './pages/FolderDashboard';
 
 function App() {
@@ -67,6 +68,7 @@ function App() {
                 <Route path="/entry/new" element={<NewEntryPage />} />
                 <Route path="/entry/:id" element={<EntryPage />} />
                 <Route path="/entry/:id/edit" element={<EditEntryPage />} />
+                <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/folder/:folderId" element={<FolderDashboard />} />
               </Route>
