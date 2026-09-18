@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -60,11 +60,14 @@ import type { JournalEntryFormData } from '../types/journal';
 
 export default function NewEntryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
 
-  const [title, setTitle] = useState<string>('');
-  const [mood, setMood] = useState<'joyful' | 'peaceful' | 'sad' | 'angry' | 'anxious' | null>(null);
-  const [tags, setTags] = useState<string[]>([]);
+  const voiceState = (location.state as any)?.voiceData;
+
+  const [title, setTitle] = useState<string>(() => voiceState?.title || '');
+  const [mood, setMood] = useState<'joyful' | 'peaceful' | 'sad' | 'angry' | 'anxious' | null>(() => voiceState?.mood || null);
+  const [tags, setTags] = useState<string[]>(() => voiceState?.tags || []);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [isPrivate, setIsPrivate] = useState<boolean>(true);
   const [tagInput, setTagInput] = useState<string>('');
@@ -185,10 +188,28 @@ export default function NewEntryPage() {
     },
   });
 
-  // Check for crash recovery / stored drafts on mount
+  // Check for voice navigation or crash recovery / stored drafts on mount
   useEffect(() => {
+    if (voiceState) {
+      if (voiceState.title) setTitle(voiceState.title);
+      if (voiceState.mood) setMood(voiceState.mood);
+      if (voiceState.tags) setTags(voiceState.tags);
+      if (editor && voiceState.contentHtml) {
+        editor.commands.setContent(voiceState.contentHtml);
+      }
+      return;
+    }
+
     const draft = DraftService.getDraft('new');
     if (draft && (draft.title || draft.content)) {
+      // Immediately populate state
+      if (draft.title) setTitle(draft.title);
+      if (draft.mood) setMood(draft.mood as any);
+      if (draft.tags && Array.isArray(draft.tags)) setTags(draft.tags);
+      if (editor && draft.content) {
+        editor.commands.setContent(draft.content);
+      }
+
       setRecoveryAvailable(true);
       setRecoveredDraft({
         id: 'draft_recovery',
@@ -201,7 +222,7 @@ export default function NewEntryPage() {
       });
       setVersionSnapshots(draft.versionHistory || []);
     }
-  }, []);
+  }, [editor, voiceState]);
 
   // Restore recovered draft
   const handleRestoreDraft = (snapshot: VersionSnapshot) => {
@@ -361,12 +382,57 @@ export default function NewEntryPage() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  // Manual Done / Close button
-  const handleDone = () => {
-    if (persistedEntryId) {
-      navigate(`/entry/${persistedEntryId}`);
-    } else {
+  // Manual Done / Close button: flushes save immediately before navigating
+  const handleDone = async () => {
+    if (!user) {
       navigate('/');
+      return;
+    }
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
+      autoSaveTimerRef.current = null;
+    }
+
+    const currentContent = editor?.getHTML() || '';
+    const currentTitle = title.trim();
+
+    // If empty entry with no previous record, just return to dashboard
+    if (!persistedEntryId && !currentTitle && (!currentContent || currentContent === '<p></p>')) {
+      navigate('/');
+      return;
+    }
+
+    try {
+      setSyncStatus('saving');
+      const payload: JournalEntryFormData = {
+        title: currentTitle || 'Untitled Entry',
+        content: currentContent,
+        mood,
+        tags: tags.length > 0 ? tags : undefined,
+        is_favorite: isFavorite,
+        is_private: isPrivate,
+      };
+
+      let targetId = persistedEntryId;
+      if (targetId) {
+        await SyncEngine.updateEntryOptimistic(user.id, targetId, payload);
+      } else {
+        const created = await SyncEngine.createEntryOptimistic(user.id, payload);
+        targetId = created.id;
+        setPersistedEntryId(created.id);
+      }
+
+      DraftService.clearDraft(targetId || 'new');
+      DraftService.clearDraft('new');
+      navigate(`/entry/${targetId}`);
+    } catch (err) {
+      console.error('Error saving on done:', err);
+      if (persistedEntryId) {
+        navigate(`/entry/${persistedEntryId}`);
+      } else {
+        navigate('/');
+      }
     }
   };
 
@@ -788,17 +854,16 @@ export default function NewEntryPage() {
         isOpen={voiceModalOpen}
         onClose={() => setVoiceModalOpen(false)}
         onApplyToEditor={(voiceData) => {
-          if (voiceData.title && (!title || title === 'Untitled')) {
+          if (voiceData.title) {
             setTitle(voiceData.title);
           }
-          if (voiceData.mood && !mood) {
+          if (voiceData.mood !== undefined) {
             setMood(voiceData.mood);
           }
           if (voiceData.tags && voiceData.tags.length > 0) {
-            setTags((prev) => Array.from(new Set([...prev, ...voiceData.tags!])));
+            setTags(voiceData.tags);
           }
           if (editor && voiceData.contentHtml) {
-            // Append or set content
             const currentContent = editor.getHTML();
             if (currentContent && currentContent !== '<p></p>') {
               editor.commands.setContent(currentContent + voiceData.contentHtml);
@@ -806,6 +871,7 @@ export default function NewEntryPage() {
               editor.commands.setContent(voiceData.contentHtml);
             }
           }
+          triggerAutoSave();
         }}
       />
     </motion.div>

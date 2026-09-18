@@ -17,6 +17,8 @@ import {
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { OfflineDB } from '../services/offlineDB';
+import { SyncEngine } from '../services/syncEngine';
 import { sanitizeHtml } from '../lib/security';
 
 const MOOD_MAP: Record<string, { bg: string; text: string; emoji: string }> = {
@@ -40,21 +42,50 @@ export default function EntryPage() {
     async function fetchEntry() {
       if (!id || !user) return;
 
+      // 1. Try local OfflineDB first (instant & handles local_ IDs and offline reading)
       try {
-        const { data, error } = await supabase
-          .from('journal_entries')
-          .select('*')
-          .eq('id', id)
-          .eq('user_id', user.id)
-          .single();
+        const local = await OfflineDB.getEntryById(id);
+        if (local) {
+          setEntry(local);
+          setError(null);
+        }
+      } catch (e) {
+        // Continue to server fetch if local lookup had issues
+      }
 
-        if (error) throw error;
-        if (!data) throw new Error('Entry not found');
+      // 2. If it's a local temporary id, do not query Supabase (prevents 400 invalid UUID error)
+      if (id.startsWith('local_')) {
+        return;
+      }
 
-        setEntry(data as JournalEntry);
-      } catch (error) {
-        console.error(error);
-        setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+      // 3. Fetch canonical record from Supabase if online
+      if (navigator.onLine) {
+        try {
+          const { data, error } = await supabase
+            .from('journal_entries')
+            .select('*')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+          if (!error && data) {
+            setEntry(data as JournalEntry);
+            await OfflineDB.putEntry({ ...(data as JournalEntry), sync_status: 'synced' });
+            setError(null);
+          } else if (error) {
+            // Check if we already loaded it from OfflineDB
+            const cached = await OfflineDB.getEntryById(id);
+            if (!cached) {
+              throw error;
+            }
+          }
+        } catch (error) {
+          console.error(error);
+          const cached = await OfflineDB.getEntryById(id);
+          if (!cached) {
+            setError(error instanceof Error ? error.message : 'An unexpected error occurred');
+          }
+        }
       }
     }
 
@@ -62,18 +93,12 @@ export default function EntryPage() {
   }, [id, user]);
 
   const handleDelete = async () => {
-    if (!user) return;
+    if (!user || !id) return;
     if (!window.confirm('Are you sure you want to delete this journal entry? This action cannot be undone.')) return;
 
     try {
       setIsDeleting(true);
-      const { error } = await supabase
-        .from('journal_entries')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await SyncEngine.deleteEntryOptimistic(id);
       navigate('/', { replace: true });
     } catch (error) {
       console.error(error);
@@ -83,7 +108,7 @@ export default function EntryPage() {
   };
 
   const toggleFavorite = async () => {
-    if (!entry || !user) return;
+    if (!entry || !user || !id) return;
     
     try {
       const updatedIsFavorite = !entry.is_favorite;
@@ -92,19 +117,9 @@ export default function EntryPage() {
         is_favorite: updatedIsFavorite
       });
       
-      const { error } = await supabase
-        .from('journal_entries')
-        .update({ is_favorite: updatedIsFavorite })
-        .eq('id', entry.id)
-        .eq('user_id', user.id);
-        
-      if (error) {
-        setEntry({
-          ...entry,
-          is_favorite: !updatedIsFavorite
-        });
-        throw error;
-      }
+      await SyncEngine.updateEntryOptimistic(user.id, id, {
+        is_favorite: updatedIsFavorite
+      });
     } catch (error) {
       console.error(error);
       setError(error instanceof Error ? error.message : 'Failed to update favorite status');

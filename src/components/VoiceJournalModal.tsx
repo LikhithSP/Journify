@@ -159,17 +159,27 @@ export default function VoiceJournalModal({
 
   // Convert Speech Transcript -> Journal Entry
   const handleConvertToJournal = () => {
-    const fullText = (transcript + ' ' + interimTranscript).trim();
+    let finalAccumulated = '';
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (voiceServiceRef.current) {
+      finalAccumulated = voiceServiceRef.current.stopListening();
+    }
+    setIsRecording(false);
+
+    const fullText = (finalAccumulated || (transcript + ' ' + interimTranscript)).trim();
     if (!fullText) return;
 
-    handleStop();
     const analysis = VoiceJournalService.analyzeTranscript(fullText);
 
+    const finalTitle = title.trim() || analysis.title || 'Voice Journal Entry';
+    const finalMood = mood !== null ? mood : analysis.suggestedMood;
+    const finalTags = tags.length > 0 ? tags : (analysis.tags.length > 0 ? analysis.tags : ['reflection']);
+
     onApplyToEditor({
-      title: title.trim() || analysis.title,
+      title: finalTitle,
       contentHtml: analysis.formattedHtml,
-      mood: mood !== null ? mood : analysis.suggestedMood,
-      tags: tags.length > 0 ? tags : analysis.tags,
+      mood: finalMood,
+      tags: finalTags,
     });
 
     onClose();

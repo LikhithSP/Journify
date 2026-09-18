@@ -337,42 +337,48 @@ export default function CalendarPage() {
                   <div
                     key={entry.id}
                     onClick={() => navigate(`/entry/${entry.id}`)}
-                    className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white bg-gray-50/50 dark:bg-neutral-850/50 cursor-pointer transition flex items-start justify-between gap-4 group"
+                    className="p-4 rounded-xl border border-gray-200 dark:border-neutral-750 hover:border-black dark:hover:border-neutral-400 bg-white dark:bg-[#1a1a1c] hover:bg-gray-50/80 dark:hover:bg-[#222226] cursor-pointer transition-all shadow-xs flex items-start justify-between gap-4 group"
                   >
-                    <div className="space-y-1.5 flex-1">
-                      <div className="flex items-center space-x-2">
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-neutral-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                           {entry.title || 'Untitled Entry'}
                         </h4>
                         {entry.mood && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white dark:bg-neutral-800 border border-gray-200 dark:border-gray-700 flex items-center">
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 dark:bg-neutral-800/90 text-neutral-800 dark:text-neutral-200 border border-neutral-200 dark:border-neutral-700 flex items-center shadow-2xs">
                             <span className="mr-1">{MOOD_EMOJIS[entry.mood] || '📝'}</span>
                             <span className="capitalize">{entry.mood}</span>
                           </span>
                         )}
                       </div>
 
-                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                      <p className="text-xs text-gray-600 dark:text-neutral-300 line-clamp-3 leading-relaxed font-normal">
                         {plainText}
                       </p>
 
-                      <div className="flex items-center space-x-3 text-[11px] text-gray-400 pt-1">
-                        <span className="flex items-center">
-                          <Clock size={11} className="mr-1" /> {format(new Date(entry.created_at), 'h:mm a')}
+                      <div className="flex items-center flex-wrap gap-2.5 text-[11px] text-gray-500 dark:text-neutral-400 pt-1">
+                        <span className="flex items-center text-gray-600 dark:text-neutral-400 font-mono">
+                          <Clock size={11} className="mr-1 text-gray-400 dark:text-neutral-500" /> {format(new Date(entry.created_at), 'h:mm a')}
                         </span>
-                        <span>• {wordCount} words</span>
+                        <span>•</span>
+                        <span className="font-mono">{wordCount} words</span>
                         {entry.tags && entry.tags.length > 0 && (
-                          <span className="flex items-center space-x-1">
-                            <Tag size={11} className="mr-0.5" />
-                            {entry.tags.map((t) => (
-                              <span key={t}>#{t}</span>
-                            ))}
-                          </span>
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center space-x-1">
+                              <Tag size={11} className="mr-0.5 text-gray-400 dark:text-neutral-500" />
+                              {entry.tags.map((t) => (
+                                <span key={t} className="bg-gray-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded text-[10px] text-gray-700 dark:text-neutral-300 font-mono">
+                                  #{t}
+                                </span>
+                              ))}
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
 
-                    <div className="p-2 text-gray-400 group-hover:text-black dark:group-hover:text-white transition">
+                    <div className="p-1.5 text-gray-400 group-hover:text-black dark:group-hover:text-white transition flex-shrink-0">
                       <ArrowRight size={16} />
                     </div>
                   </div>

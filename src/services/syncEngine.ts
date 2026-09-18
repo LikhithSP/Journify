@@ -83,7 +83,13 @@ class SyncEngineClass {
     userId: string,
     entryData: Omit<JournalEntry, 'id' | 'user_id' | 'created_at' | 'updated_at'>
   ): Promise<JournalEntry> {
-    const tempId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const tempId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+          const r = (Math.random() * 16) | 0;
+          const v = c === 'x' ? r : (r & 0x3) | 0x8;
+          return v.toString(16);
+        });
     const now = new Date().toISOString();
 
     const newEntry: JournalEntry = {
@@ -223,7 +229,7 @@ class SyncEngineClass {
     const { operation, entityId, payload } = item;
 
     if (operation === 'CREATE') {
-      // If temporary local id, omit id so database generates UUID, or upsert
+      // If temporary local id, omit id so database generates UUID
       const isTempId = entityId.startsWith('local_');
       const createPayload = { ...payload };
       if (isTempId) {
@@ -246,6 +252,12 @@ class SyncEngineClass {
         await OfflineDB.putEntry({ ...data, sync_status: 'synced' });
       }
     } else if (operation === 'UPDATE') {
+      // If entityId is a legacy local_ id that was not yet mapped, update in offlineDB only
+      if (entityId.startsWith('local_')) {
+        await OfflineDB.putEntry({ ...payload, sync_status: 'pending' });
+        return;
+      }
+
       // Conflict Resolution: Check server updated_at before overwriting
       const { data: serverRecord, error: fetchError } = await supabase
         .from('journal_entries')

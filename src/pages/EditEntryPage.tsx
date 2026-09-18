@@ -746,14 +746,14 @@ export default function EditEntryPage() {
         isOpen={voiceModalOpen}
         onClose={() => setVoiceModalOpen(false)}
         onApplyToEditor={(voiceData) => {
-          if (voiceData.title && (!title || title === 'Untitled')) {
+          if (voiceData.title) {
             setTitle(voiceData.title);
           }
-          if (voiceData.mood && !mood) {
+          if (voiceData.mood !== undefined) {
             setMood(voiceData.mood);
           }
           if (voiceData.tags && voiceData.tags.length > 0) {
-            setTags((prev) => Array.from(new Set([...prev, ...voiceData.tags!])));
+            setTags(voiceData.tags);
           }
           if (editor && voiceData.contentHtml) {
             const currentContent = editor.getHTML();
@@ -763,6 +763,7 @@ export default function EditEntryPage() {
               editor.commands.setContent(voiceData.contentHtml);
             }
           }
+          triggerAutoSave();
         }}
       />
     </motion.div>

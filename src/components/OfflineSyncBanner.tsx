@@ -25,8 +25,8 @@ export default function OfflineSyncBanner() {
     SyncEngine.processQueue();
   };
 
-  // Only render if offline, or currently syncing, or there are pending queue items
-  if (syncInfo.status === 'online' && syncInfo.pendingCount === 0) {
+  // Only render if actively offline, syncing, or there are pending queue items (never show 'All changes synced')
+  if ((syncInfo.status === 'online' || syncInfo.status === 'synced') && syncInfo.pendingCount === 0) {
     return null;
   }
 
@@ -37,9 +37,7 @@ export default function OfflineSyncBanner() {
           ? 'bg-neutral-900/90 text-white border-neutral-800'
           : syncInfo.status === 'syncing'
           ? 'bg-blue-600/90 text-white border-blue-500'
-          : syncInfo.pendingCount > 0
-          ? 'bg-amber-500/90 text-white border-amber-400'
-          : 'bg-emerald-600/90 text-white border-emerald-500'
+          : 'bg-amber-500/90 text-white border-amber-400'
       }`}
     >
       <div className="flex items-center space-x-2">
@@ -53,15 +51,10 @@ export default function OfflineSyncBanner() {
             <RefreshCw size={14} className="animate-spin text-white" />
             <span>Syncing {syncInfo.pendingCount} pending items...</span>
           </>
-        ) : syncInfo.pendingCount > 0 ? (
+        ) : (
           <>
             <AlertTriangle size={15} className="text-white" />
             <span>{syncInfo.pendingCount} changes queued</span>
-          </>
-        ) : (
-          <>
-            <CheckCircle2 size={15} className="text-white" />
-            <span>All changes synced</span>
           </>
         )}
       </div>

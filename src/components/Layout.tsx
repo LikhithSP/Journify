@@ -198,30 +198,33 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen w-screen bg-white dark:bg-[rgb(23,23,23)]">
-      {/* Theme Toggle Button (top right, fixed) - only on dashboard */}
-      {isDashboard && (        <button
-          onClick={toggleTheme}
-          className="fixed top-4 right-16 z-50 p-2 rounded-md bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      {/* Global Theme Toggle Button (top right, fixed) - accessible on every page */}
+      <button
+        onClick={toggleTheme}
+        className="fixed top-4 right-4 sm:right-8 z-50 p-2 rounded-xl bg-white/90 dark:bg-neutral-800/90 hover:bg-gray-100 dark:hover:bg-neutral-700 backdrop-blur-md border border-gray-200 dark:border-neutral-700 shadow-sm transition-all duration-150 flex items-center justify-center cursor-pointer"
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+      >
+        {theme === 'dark' ? (
+          <Sun size={16} className="text-amber-400 stroke-[2.2]" />
+        ) : (
+          <Moon size={16} className="text-neutral-700 stroke-[2.2]" />
+        )}
+      </button>
+
+      {/* Mobile Menu Toggle (Hamburger) */}
+      <div className="lg:hidden fixed top-4 left-4 z-40">
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="p-2 rounded-xl bg-white/90 dark:bg-neutral-800/90 backdrop-blur-md shadow-sm border border-gray-200 dark:border-neutral-700"
+          aria-label="Open sidebar menu"
         >
-          {theme === 'dark' ? <Sun size={16} className="text-gray-300" /> : <Moon size={16} className="text-gray-700" />}
+          {/* Hamburger icon: 3 lines */}
+          <span className="block w-5 h-0.5 bg-gray-800 dark:bg-gray-200 mb-1 rounded-full"></span>
+          <span className="block w-5 h-0.5 bg-gray-800 dark:bg-gray-200 mb-1 rounded-full"></span>
+          <span className="block w-5 h-0.5 bg-gray-800 dark:bg-gray-200 rounded-full"></span>
         </button>
-      )}
-      {/* Mobile Menu Toggle (Hamburger) - only on dashboard */}
-      {isDashboard && (
-        <div className="lg:hidden fixed top-4 left-4 z-20">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg bg-white/90 dark:bg-gray-800/90 backdrop-blur shadow-sm border border-gray-200 dark:border-gray-700"
-            aria-label="Open sidebar menu"
-          >
-            {/* Hamburger icon: 3 lines */}
-            <span className="block w-6 h-0.5 bg-gray-800 dark:bg-gray-200 mb-1"></span>
-            <span className="block w-6 h-0.5 bg-gray-800 dark:bg-gray-200 mb-1"></span>
-            <span className="block w-6 h-0.5 bg-gray-800 dark:bg-gray-200"></span>
-          </button>
-        </div>
-      )}
+      </div>
       
       {/* Sidebar */}
       <AnimatePresence mode="wait">
@@ -231,19 +234,30 @@ export default function Layout() {
             animate={{ x: 0 }}
             exit={{ x: -280 }}
             transition={{ duration: 0.2 }}
-            className="w-56 md:w-60 h-full border-r border-gray-100 dark:border-gray-800 fixed lg:sticky top-0 z-10 bg-white dark:bg-[rgb(23,23,23)]"
+            className="w-56 md:w-60 h-full border-r border-gray-100 dark:border-gray-800 fixed lg:sticky top-0 z-40 bg-white dark:bg-[rgb(23,23,23)]"
             onClick={(e) => {
               // Prevent closing when clicking inside the sidebar
               e.stopPropagation();
             }}
           >
-            <div className="flex flex-col h-full">              {/* App Logo */}
-              <div className="px-4 py-5">
-                <h1 className="text-xl font-semibold text-black dark:text-white flex items-center">
-                  <BookMarked className="mr-2 h-5 w-5 text-gray-700 dark:text-gray-300" />
-                  Journify
-                </h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Your daily journal companion</p>
+            <div className="flex flex-col h-full">
+              {/* App Logo & Theme Toggle */}
+              <div className="px-4 py-5 flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-semibold text-black dark:text-white flex items-center">
+                    <BookMarked className="mr-2 h-5 w-5 text-gray-700 dark:text-gray-300" />
+                    Journify
+                  </h1>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Your daily journal companion</p>
+                </div>
+                <button
+                  onClick={toggleTheme}
+                  className="p-1.5 rounded-lg text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
+                  aria-label="Toggle theme"
+                  title="Toggle light/dark theme"
+                >
+                  {theme === 'dark' ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} />}
+                </button>
               </div>
               
               {/* Navigation */}

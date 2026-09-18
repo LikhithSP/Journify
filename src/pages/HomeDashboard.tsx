@@ -563,7 +563,7 @@ export default function HomeDashboard() {
             mood: voiceData.mood || null,
             tags: voiceData.tags || [],
           });
-          navigate('/entry/new');
+          navigate('/entry/new', { state: { voiceData } });
         }}
       />
     </div>

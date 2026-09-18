@@ -9,7 +9,7 @@ const ASSETS_TO_CACHE = [
 ];
 
 // Install: Cache core application shell
-self.addEventListener('install', (event: any) => {
+self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE).catch((err) => {
@@ -17,11 +17,11 @@ self.addEventListener('install', (event: any) => {
       });
     })
   );
-  (self as any).skipWaiting();
+  self.skipWaiting();
 });
 
 // Activate: Clean old caches
-self.addEventListener('activate', (event: any) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
@@ -33,11 +33,11 @@ self.addEventListener('activate', (event: any) => {
       );
     })
   );
-  (self as any).clients.claim();
+  self.clients.claim();
 });
 
 // Fetch: Stale-While-Revalidate strategy for static resources
-self.addEventListener('fetch', (event: any) => {
+self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
@@ -81,10 +81,10 @@ self.addEventListener('fetch', (event: any) => {
 });
 
 // Background Sync trigger
-self.addEventListener('sync', (event: any) => {
+self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-entries') {
     event.waitUntil(
-      (self as any).clients.matchAll().then((clients: any[]) => {
+      self.clients.matchAll().then((clients) => {
         clients.forEach((client) => {
           client.postMessage({ type: 'TRIGGER_SYNC' });
         });
@@ -94,7 +94,7 @@ self.addEventListener('sync', (event: any) => {
 });
 
 // Push Notifications Event Handling
-self.addEventListener('push', (event: any) => {
+self.addEventListener('push', (event) => {
   let data = { title: 'Journify Reminder', body: "Time for today's reflection ✨", icon: '/pwa-192x192.svg' };
   if (event.data) {
     try {
@@ -119,12 +119,12 @@ self.addEventListener('push', (event: any) => {
   };
 
   event.waitUntil(
-    (self as any).registration.showNotification(data.title, options)
+    self.registration.showNotification(data.title, options)
   );
 });
 
 // Notification Click action
-self.addEventListener('notificationclick', (event: any) => {
+self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
   if (event.action === 'dismiss') {
@@ -132,15 +132,15 @@ self.addEventListener('notificationclick', (event: any) => {
   }
 
   event.waitUntil(
-    (self as any).clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       // Focus existing window or open new
       for (const client of clientList) {
         if (client.url && 'focus' in client) {
           return client.focus();
         }
       }
-      if ((self as any).clients.openWindow) {
-        return (self as any).clients.openWindow('/');
+      if (self.clients.openWindow) {
+        return self.clients.openWindow('/');
       }
     })
   );
