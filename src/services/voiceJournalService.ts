@@ -175,7 +175,7 @@ export class VoiceJournalService {
     }
 
     // Tag inference
-    const tags = ['voice'];
+    const tags: string[] = [];
     if (/\b(work|meeting|project|office|job)\b/.test(lower)) tags.push('work');
     if (/\b(idea|inspiration|thought|brainstorm)\b/.test(lower)) tags.push('ideas');
     if (/\b(family|friend|mom|dad|relationship)\b/.test(lower)) tags.push('personal');

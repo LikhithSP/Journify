@@ -10,14 +10,6 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const HERO_IMAGE_URL = 'https://framerusercontent.com/images/pC6wv63RktJx8IvHALRzmZ2K90.webp?width=2454&height=2877';
 
-const TRUST_LOGOS = [
-  { name: 'Bugbusterlabs', icon: Shield },
-  { name: 'Indoorwall', icon: Bookmark },
-  { name: 'PaperWeight', icon: BookOpen },
-  { name: 'Laager', icon: Award },
-  { name: 'Facets', icon: Zap },
-];
-
 const FEATURES = [
   {
     icon: <BookOpen size={20} />,
@@ -252,28 +244,13 @@ export default function LandingPage() {
                 </a>
               </motion.div>
 
-              {/* Social Proof & Trust Badges */}
+              {/* Divider line grey in dark mode */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.35 }}
-                className="pt-6 border-t border-neutral-100 dark:border-neutral-850"
-              >
-                <p className="text-xs font-normal text-neutral-400 dark:text-neutral-500 mb-4 tracking-normal">
-                  Loved by 10,000+ writers, mindful thinkers & creators worldwide
-                </p>
-                <div className="flex items-center gap-6 sm:gap-9 opacity-50 grayscale hover:grayscale-0 hover:opacity-90 transition-all flex-wrap">
-                  {TRUST_LOGOS.map((logo) => {
-                    const Icon = logo.icon;
-                    return (
-                      <div key={logo.name} className="flex items-center gap-1.5 text-neutral-600 dark:text-neutral-400">
-                        <Icon size={16} />
-                        <span className="font-semibold text-xs tracking-tight">{logo.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </motion.div>
+                className="pt-6 border-t border-neutral-200 dark:border-neutral-700/80"
+              />
             </div>
 
             {/* Right Hero Image (Classical Scholar / Master with Book - Enlarged Hero Presence) */}

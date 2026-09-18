@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { format, isToday, isYesterday, differenceInDays } from 'date-fns';
+import { format, isToday, isYesterday, differenceInDays, subDays } from 'date-fns';
 import {
-  Plus, Mic, Flame, BookOpen,
-  Calendar, ChevronRight, Sparkles, Layers,
-  Clock, ArrowUpRight
+  Plus, Mic, Flame,
+  Calendar, Sparkles, Layers,
+  ArrowUpRight, PenTool, Check
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
+import { useProfileInfo } from '../hooks/useProfileInfo';
 import { SyncEngine } from '../services/syncEngine';
 import { OfflineDB } from '../services/offlineDB';
 import VoiceJournalModal from '../components/VoiceJournalModal';
@@ -34,7 +35,7 @@ function getWritingPrompt() {
     'Describe a moment that surprised you.',
     'What would you tell your younger self today?',
     'What are you looking forward to?',
-    'What challenged you today?',
+    'What would you like to leave here?',
     'What did you learn recently?',
     "What's on your mind?",
   ];
@@ -103,7 +104,18 @@ function FanSpreadSection({
   if (entries.length === 0) return null;
 
   const displayCount = Math.min(entries.length, 5);
-  const fanCards = entries.slice(0, displayCount);
+  // Rearrange top recent entries so the latest (index 0) is placed at the exact center of the fan deck
+  // e.g., for 5 entries: [entry[3], entry[1], entry[0](latest), entry[2], entry[4]]
+  // For 3 entries: [entry[1], entry[0](latest), entry[2]]
+  const arrangeCenterLatest = (list: JournalEntry[]) => {
+    if (list.length <= 1) return list;
+    if (list.length === 2) return [list[1], list[0]];
+    if (list.length === 3) return [list[1], list[0], list[2]];
+    if (list.length === 4) return [list[2], list[1], list[0], list[3]];
+    return [list[3], list[1], list[0], list[2], list[4]];
+  };
+
+  const fanCards = arrangeCenterLatest(entries.slice(0, displayCount));
 
   // Center alignment offset mapping based on actual cards count
   const getFanTransform = (i: number, total: number) => {
@@ -232,136 +244,19 @@ function FanSpreadSection({
   );
 }
 
-// ─── Masonry Journal Grid ─────────────────────────────────────────────────────
-
-function MasonryGrid({
-  entries,
-  onSelect,
-}: {
-  entries: JournalEntry[];
-  onSelect: (id: string) => void;
-}) {
-  if (entries.length === 0) return null;
-
-  return (
-    <div className="space-y-3">
-      {/* Section Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <BookOpen size={15} className="text-gray-400 dark:text-gray-500" />
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
-            All Entries
-          </h2>
-          <span className="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-[#222] text-gray-600 dark:text-gray-400 font-mono">
-            {entries.length}
-          </span>
-        </div>
-        <Link
-          to="/journals"
-          className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors group font-medium"
-        >
-          Browse full archive
-          <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-        </Link>
-      </div>
-
-      {/* Masonry Container via CSS columns */}
-      <div className="columns-1 sm:columns-2 lg:columns-3 gap-3.5 [column-fill:_balance]">
-        {entries.map((entry, idx) => {
-          const mood = entry.mood ? MOOD_MAP[entry.mood] : null;
-          const excerpt = stripHtml(entry.content);
-          const words = excerpt ? excerpt.split(' ').filter(Boolean).length : 0;
-          // Varying max-length so the masonry looks authentic and dynamic
-          const maxExcerpt = (idx % 3 === 0) ? 280 : (idx % 2 === 0) ? 140 : 190;
-          const isShort = excerpt.length < 80;
-
-          return (
-            <motion.div
-              key={entry.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: Math.min(idx * 0.03, 0.3) }}
-              className="break-inside-avoid mb-3.5"
-            >
-              <div
-                onClick={() => onSelect(entry.id)}
-                className="group relative rounded-xl p-4 cursor-pointer
-                  bg-white dark:bg-[#1e1e1e]
-                  border border-neutral-200/80 dark:border-[#2a2a2a]
-                  hover:border-neutral-400 dark:hover:border-neutral-600
-                  shadow-xs hover:shadow-md transition-all duration-200"
-              >
-                {/* Card Top Row: Mood emoji / Icon + Date */}
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <span className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 font-mono">
-                    {formatEntryDate(entry.created_at)}
-                  </span>
-                  {mood ? (
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-xs flex items-center gap-1 font-medium ${mood.bg} ${mood.text} border ${mood.border}`}
-                    >
-                      <span>{mood.emoji}</span>
-                      <span className="capitalize text-[10px] hidden sm:inline">{entry.mood}</span>
-                    </span>
-                  ) : (
-                    <span className="text-[10px] text-neutral-400 font-mono flex items-center gap-1">
-                      <Clock size={10} />
-                      {words}w
-                    </span>
-                  )}
-                </div>
-
-                {/* Title */}
-                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm leading-snug mb-1.5 group-hover:text-black dark:group-hover:text-white transition-colors">
-                  {entry.title || 'Untitled'}
-                </h3>
-
-                {/* Excerpt Body */}
-                {excerpt ? (
-                  <p className={`text-xs text-neutral-600 dark:text-neutral-400 leading-relaxed font-normal ${isShort ? 'line-clamp-2' : 'line-clamp-5'}`}>
-                    {excerpt.slice(0, maxExcerpt)}
-                    {excerpt.length > maxExcerpt ? '…' : ''}
-                  </p>
-                ) : (
-                  <p className="text-xs italic text-neutral-300 dark:text-neutral-600">
-                    Empty entry
-                  </p>
-                )}
-
-                {/* Tags and footer */}
-                {entry.tags && entry.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-3 pt-2.5 border-t border-neutral-100 dark:border-neutral-800/80">
-                    {entry.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-[10px] text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-[#252525] px-1.5 py-0.5 rounded"
-                      >
-                        #{tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ─── Main Component: HomeDashboard ───────────────────────────────────────────
 
 export default function HomeDashboard() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
+  const profile = useProfileInfo(user?.id);
 
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [voiceOpen, setVoiceOpen] = useState(false);
 
-  const displayName = user?.email?.split('@')[0] ?? 'there';
+  const displayName = profile?.name?.trim() || user?.email?.split('@')[0] || 'there';
   const greeting = getGreeting(displayName);
   const prompt = getWritingPrompt();
 
@@ -398,6 +293,19 @@ export default function HomeDashboard() {
 
   // Fan spread entries (top 5 recent)
   const fanEntries = sortedEntries.slice(0, 5);
+
+  // Past 7 days streak track (chronological Mon-Sun / 6 days ago -> today)
+  const pastWeekDays = Array.from({ length: 7 }).map((_, idx) => {
+    const d = subDays(new Date(), 6 - idx);
+    const dateStr = format(d, 'yyyy-MM-dd');
+    const hasEntry = entries.some((e) => format(new Date(e.created_at), 'yyyy-MM-dd') === dateStr);
+    return {
+      date: d,
+      dayLabel: format(d, 'EEE'),
+      logged: hasEntry,
+      isCurrentDay: isToday(d),
+    };
+  });
 
   if (loading) {
     return (
@@ -461,28 +369,6 @@ export default function HomeDashboard() {
           </div>
         </div>
 
-        {/* Notion Minimal Inline Stat Bar */}
-        <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-4 pt-3 border-t border-neutral-100 dark:border-neutral-850 text-xs text-neutral-500 dark:text-neutral-400">
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">{totalEntries}</span>
-            <span>total notes</span>
-          </div>
-          <div className="text-neutral-300 dark:text-neutral-700">|</div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">{thisWeek}</span>
-            <span>this week</span>
-          </div>
-          <div className="text-neutral-300 dark:text-neutral-700">|</div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono font-semibold text-neutral-800 dark:text-neutral-200">{streak}</span>
-            <span>streak days</span>
-          </div>
-          <div className="text-neutral-300 dark:text-neutral-700">|</div>
-          <div className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${writtenToday ? 'bg-emerald-500' : 'bg-amber-400'}`} />
-            <span>{writtenToday ? 'Logged today' : 'Needs daily entry'}</span>
-          </div>
-        </div>
       </div>
 
       {/* ── Empty State ── */}
@@ -505,7 +391,159 @@ export default function HomeDashboard() {
         </div>
       )}
 
-      {/* ── Fan Spread Recent Journal Showcase ── */}
+      {/* ── Cool Widgets Section: Write Your Journal Now (Quick Session) & Streak Tracker ── */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+        {/* Write Your Journal Now Widget (Quick Session) - matching light and dark themes */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="relative overflow-hidden rounded-2xl p-5 bg-white dark:bg-[#1c1c1c] border border-neutral-200/80 dark:border-[#2b2b2b] shadow-xs flex flex-col justify-between group hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
+        >
+          {/* Subtle Ambient Accent */}
+          <div className="absolute -top-12 -left-12 w-32 h-32 bg-blue-500/10 dark:bg-blue-500/15 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-violet-500/10 dark:bg-violet-500/15 rounded-full blur-2xl pointer-events-none" />
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-neutral-100 dark:bg-white/10 border border-neutral-200 dark:border-white/10 flex items-center justify-center">
+                  <PenTool size={15} className="text-neutral-700 dark:text-neutral-200" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-400 dark:text-neutral-400">
+                    Quick Session
+                  </h3>
+                  <p className="text-xs font-medium text-neutral-900 dark:text-neutral-200">
+                    Write Your Journal Now
+                  </p>
+                </div>
+              </div>
+
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-white/10 text-neutral-600 dark:text-neutral-300 border border-neutral-200 dark:border-white/10">
+                Daily Focus
+              </span>
+            </div>
+
+            {/* Journal Visual Feature replacing Today's Inspiration box */}
+            <div className="my-2 p-3 rounded-xl bg-neutral-50/80 dark:bg-white/5 border border-neutral-200/70 dark:border-white/5 flex items-center gap-3.5">
+              <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 flex items-center justify-center">
+                <img
+                  src="https://cdn.iconscout.com/icon/premium/png-512-thumb/journal-icon-svg-download-png-11795154.png"
+                  alt="Journal Illustration"
+                  className="w-full h-full object-contain drop-shadow-md hover:scale-105 transition-transform duration-300 dark:invert dark:brightness-200"
+                  loading="lazy"
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-neutral-800 dark:text-neutral-200 mb-0.5">
+                  <span>Capture Today's Moments</span>
+                </div>
+                <p className="text-[11px] sm:text-xs text-neutral-500 dark:text-neutral-400 leading-relaxed line-clamp-2">
+                  Take a few calm moments to write your thoughts, gratitude, or reflections.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Action CTAs */}
+          <div className="pt-3 mt-2 flex items-center gap-2">
+            <button
+              onClick={() => navigate('/entry/new')}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3.5 rounded-xl text-xs font-semibold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 hover:opacity-90 transition shadow-xs group-hover:scale-[1.01]"
+            >
+              <Plus size={14} />
+              <span>Start Writing</span>
+            </button>
+            <button
+              onClick={() => setVoiceOpen(true)}
+              className="inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-medium bg-neutral-100 hover:bg-neutral-200 dark:bg-white/10 dark:hover:bg-white/15 text-neutral-800 dark:text-white border border-neutral-200 dark:border-white/10 transition"
+              title="Speak your reflection"
+            >
+              <Mic size={13} className="text-rose-500 dark:text-rose-400" />
+              <span>Voice</span>
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Streak & Consistency Widget */}
+        <motion.div
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.08 }}
+          className="relative overflow-hidden rounded-2xl p-5 bg-white dark:bg-[#1c1c1c] border border-neutral-200/80 dark:border-[#2b2b2b] shadow-xs flex flex-col justify-between group hover:border-neutral-300 dark:hover:border-neutral-700 transition-all"
+        >
+          {/* Subtle Ambient Background Glow */}
+          <div className="absolute -top-16 -right-16 w-36 h-36 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-2xl pointer-events-none" />
+
+          <div>
+            {/* Top row */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center">
+                  <Flame size={16} className={streak > 0 ? "text-amber-500 fill-amber-500 animate-pulse" : "text-neutral-400"} />
+                </div>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    Streak Tracker
+                  </h3>
+                  <p className="text-xs font-medium text-neutral-900 dark:text-neutral-200">
+                    {streak > 0 ? `${streak} Day Momentum` : 'Ready to start'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Total Notes Count inside Streak Widget */}
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-neutral-100 dark:bg-[#252525] border border-neutral-200/80 dark:border-[#333] text-neutral-700 dark:text-neutral-300 text-[11px] font-mono font-semibold">
+                <span>{totalEntries}</span>
+                <span className="font-sans font-normal text-[10px] text-neutral-400">notes</span>
+              </div>
+            </div>
+
+            {/* Streak Counter & Weekly Pulse */}
+            <div className="flex items-baseline gap-2 mb-3">
+              <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-neutral-950 dark:text-neutral-50 font-mono">
+                {streak}
+              </span>
+              <span className="text-xs text-neutral-500 dark:text-neutral-400">
+                {streak === 1 ? 'day recorded in a row' : 'consecutive days logged'}
+              </span>
+            </div>
+
+            {/* 7-Day Mini Dots Track */}
+            <div className="flex items-center justify-between gap-1.5 pt-2 pb-1">
+              {pastWeekDays.map((item) => (
+                <div key={item.dayLabel} className="flex flex-col items-center gap-1.5 flex-1">
+                  <div
+                    className={`w-full h-8 rounded-lg flex items-center justify-center text-[10px] font-mono transition-all ${
+                      item.logged
+                        ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 font-bold shadow-xs'
+                        : item.isCurrentDay
+                        ? 'border-2 border-dashed border-neutral-400 dark:border-neutral-600 bg-neutral-100/50 dark:bg-neutral-800/40 text-neutral-500 dark:text-neutral-400'
+                        : 'bg-neutral-100 dark:bg-neutral-800/50 text-neutral-400 dark:text-neutral-600'
+                    }`}
+                    title={`${item.dayLabel}: ${item.logged ? 'Logged' : 'No entry'}`}
+                  >
+                    {item.logged ? <Check size={12} strokeWidth={3} /> : null}
+                  </div>
+                  <span className="text-[10px] font-medium text-neutral-400 dark:text-neutral-500">
+                    {item.dayLabel}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="pt-3 mt-3 border-t border-neutral-200 dark:border-neutral-700/80 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+            <span>{writtenToday ? '🔥 Logged for today!' : '⚡ Write today to keep streak.'}</span>
+            <Link to="/calendar" className="font-medium text-neutral-800 dark:text-neutral-200 hover:underline inline-flex items-center gap-0.5">
+              History <ArrowUpRight size={11} />
+            </Link>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* ── Fan Spread Recent Journal Showcase (placed below both widgets) ── */}
       {fanEntries.length > 0 && (
         <FanSpreadSection
           entries={fanEntries}
@@ -513,13 +551,6 @@ export default function HomeDashboard() {
         />
       )}
 
-      {/* ── Masonry Grid of All Journal Entries ── */}
-      {sortedEntries.length > 0 && (
-        <MasonryGrid
-          entries={sortedEntries}
-          onSelect={(id) => navigate(`/entry/${id}`)}
-        />
-      )}
 
       {/* ── Voice Journal Modal ── */}
       <VoiceJournalModal

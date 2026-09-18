@@ -3,8 +3,6 @@ import {
   ShieldCheck, 
   Download, 
   Lock, 
-  Laptop, 
-  Globe, 
   CheckCircle2, 
   FileCheck2, 
   AlertTriangle,
@@ -13,16 +11,16 @@ import {
   UserCheck
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { PRIVACY_SPECIFICATIONS, PrivacyService } from '../services/privacyService';
+import { PrivacyService } from '../services/privacyService';
 import type { ConsentSettings } from '../services/privacyService';
 import { OfflineDB } from '../services/offlineDB';
 import { useNavigate } from 'react-router-dom';
 
 export default function PrivacyCenterPage() {
-  const { user, signOut, exportUserData, deleteAccount } = useAuth();
+  const { user, exportUserData, deleteAccount } = useAuth();
   const navigate = useNavigate();
 
-  const [activeSubSection, setActiveSubSection] = useState<'your-data' | 'encryption' | 'retention' | 'consent' | 'privacy-policy'>('your-data');
+  const [activeTab, setActiveTab] = useState<'controls' | 'policy'>('controls');
   const [consent, setConsent] = useState<ConsentSettings>(() => PrivacyService.getConsent());
   const [exporting, setExporting] = useState(false);
   const [downloadingJournals, setDownloadingJournals] = useState(false);
@@ -30,7 +28,6 @@ export default function PrivacyCenterPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [deleting, setDeleting] = useState(false);
-  const [globalLoggingOut, setGlobalLoggingOut] = useState(false);
   const [feedback, setFeedback] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -38,14 +35,14 @@ export default function PrivacyCenterPage() {
   }, []);
 
   const handleConsentToggle = (key: keyof ConsentSettings) => {
-    if (key === 'essentialStorage') return; // Essential cannot be disabled
+    if (key === 'essentialStorage') return;
     const updated = { ...consent, [key]: !consent[key] };
     setConsent(updated);
     PrivacyService.saveConsent(updated);
-    setFeedback({ text: 'Privacy and consent preferences updated.', type: 'success' });
+    setFeedback({ text: 'Preferences updated successfully.', type: 'success' });
   };
 
-  // 1. Export Everything (Comprehensive Archive)
+  // Export Everything (JSON Archive)
   const handleExportAll = async () => {
     setExporting(true);
     setFeedback(null);
@@ -57,7 +54,7 @@ export default function PrivacyCenterPage() {
       const downloadUrl = URL.createObjectURL(jsonBlob);
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = `journify_full_archive_${user?.id?.slice(0, 8)}_${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `journify_archive_${user?.id?.slice(0, 8)}_${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -71,7 +68,7 @@ export default function PrivacyCenterPage() {
     }
   };
 
-  // 2. Download Journals Only (Clean Markdown Text format)
+  // Download Journals Only (Clean Markdown format)
   const handleDownloadJournals = async () => {
     setDownloadingJournals(true);
     setFeedback(null);
@@ -99,7 +96,7 @@ export default function PrivacyCenterPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(downloadUrl);
 
-      setFeedback({ text: 'Journals downloaded in clean Markdown format.', type: 'success' });
+      setFeedback({ text: 'Journals downloaded in Markdown format.', type: 'success' });
     } catch (err: any) {
       setFeedback({ text: `Journal download failed: ${err.message}`, type: 'error' });
     } finally {
@@ -107,13 +104,13 @@ export default function PrivacyCenterPage() {
     }
   };
 
-  // 3. Purge Local IndexedDB Offline Storage
+  // Purge Local IndexedDB Offline Storage
   const handlePurgeLocalStorage = async () => {
     if (!user) return;
     setPurgingLocal(true);
     try {
       await OfflineDB.clearAll();
-      setFeedback({ text: 'Local IndexedDB offline cache cleared cleanly.', type: 'success' });
+      setFeedback({ text: 'Local offline cache cleared.', type: 'success' });
     } catch (e: any) {
       setFeedback({ text: `Failed to clear offline storage: ${e.message}`, type: 'error' });
     } finally {
@@ -121,19 +118,7 @@ export default function PrivacyCenterPage() {
     }
   };
 
-  // 4. Terminate Sessions
-  const handleLogoutAll = async () => {
-    setGlobalLoggingOut(true);
-    try {
-      await signOut('global');
-      navigate('/login');
-    } catch (e: any) {
-      setFeedback({ text: 'Could not log out from all sessions.', type: 'error' });
-      setGlobalLoggingOut(false);
-    }
-  };
-
-  // 5. Account Deletion
+  // Account Deletion
   const handleDeleteAccount = async () => {
     if (deleteConfirmationText !== 'DELETE') {
       setFeedback({ text: 'Please type "DELETE" exactly to confirm.', type: 'error' });
@@ -151,79 +136,49 @@ export default function PrivacyCenterPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-4 px-2 space-y-8">
-      {/* Top Header */}
-      <div className="border-b border-gray-100 dark:border-gray-800 pb-5">
-        <div className="flex items-center space-x-3 mb-2">
+    <div className="max-w-4xl mx-auto py-4 px-2 space-y-6">
+      {/* Header */}
+      <div className="border-b border-gray-100 dark:border-gray-800 pb-4">
+        <div className="flex items-center space-x-3 mb-1.5">
           <div className="p-2 rounded-xl bg-black text-white dark:bg-white dark:text-black">
-            <ShieldCheck size={24} />
+            <ShieldCheck size={22} />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
               Privacy Center
             </h1>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              Privacy is Journify's identity. You own your thoughts, controls, and data.
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Manage your personal data, download copies, and control how your journal is stored.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Navigation Pills */}
-      <div className="flex flex-wrap gap-2 border-b border-gray-100 dark:border-gray-800 pb-3 text-xs">
+      {/* Streamlined 2-Tab Navigation */}
+      <div className="flex gap-2 border-b border-gray-100 dark:border-gray-800 pb-3 text-xs">
         <button
-          onClick={() => setActiveSubSection('your-data')}
-          className={`px-3 py-1.5 rounded-lg font-medium transition ${
-            activeSubSection === 'your-data'
-              ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+          onClick={() => setActiveTab('controls')}
+          className={`px-3.5 py-1.5 rounded-lg font-medium transition ${
+            activeTab === 'controls'
+              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
           }`}
         >
-          Your Data & Controls
+          Data & Privacy Controls
         </button>
         <button
-          onClick={() => setActiveSubSection('encryption')}
-          className={`px-3 py-1.5 rounded-lg font-medium transition ${
-            activeSubSection === 'encryption'
-              ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+          onClick={() => setActiveTab('policy')}
+          className={`px-3.5 py-1.5 rounded-lg font-medium transition ${
+            activeTab === 'policy'
+              ? 'bg-black text-white dark:bg-white dark:text-black shadow-xs'
+              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
           }`}
         >
-          Encryption at Rest & Transparency
-        </button>
-        <button
-          onClick={() => setActiveSubSection('retention')}
-          className={`px-3 py-1.5 rounded-lg font-medium transition ${
-            activeSubSection === 'retention'
-              ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Data Retention Policy
-        </button>
-        <button
-          onClick={() => setActiveSubSection('consent')}
-          className={`px-3 py-1.5 rounded-lg font-medium transition ${
-            activeSubSection === 'consent'
-              ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Consent Management
-        </button>
-        <button
-          onClick={() => setActiveSubSection('privacy-policy')}
-          className={`px-3 py-1.5 rounded-lg font-medium transition ${
-            activeSubSection === 'privacy-policy'
-              ? 'bg-black text-white dark:bg-white dark:text-black'
-              : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
-          }`}
-        >
-          Privacy Policy
+          Privacy Policy & Security
         </button>
       </div>
 
-      {/* Alert banner */}
+      {/* Notification Banner */}
       {feedback && (
         <div className={`p-3 rounded-xl text-xs flex items-center ${
           feedback.type === 'success'
@@ -235,396 +190,256 @@ export default function PrivacyCenterPage() {
         </div>
       )}
 
-      {/* SECTION 1: YOUR DATA & CONTROLS */}
-      {activeSubSection === 'your-data' && (
+      {/* TAB 1: DATA & PRIVACY CONTROLS */}
+      {activeTab === 'controls' && (
         <div className="space-y-6">
-          <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-6">
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <Database size={18} className="mr-2 text-gray-500" />
-              Your Data Ownership & Portability
-            </h2>
+          {/* Export & Storage Cards */}
+          <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <Database size={16} className="mr-2 text-neutral-500" />
+                Data Portability & Export
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Download a local copy of your memories anytime in standard open formats.
+              </p>
+            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Export Everything */}
-              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 flex flex-col justify-between space-y-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {/* Export JSON */}
+              <div className="p-4 rounded-xl border border-gray-200/90 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/40 flex flex-col justify-between space-y-3">
                 <div>
                   <div className="flex items-center space-x-2 text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    <Download size={15} className="text-black dark:text-white" />
-                    <span>Export Everything (JSON)</span>
+                    <Download size={14} className="text-neutral-700 dark:text-neutral-200" />
+                    <span>Full Data Archive (JSON)</span>
                   </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Download complete machine-readable archive including entries, tags, folders, and profile info.
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    Complete machine-readable backup of your entries, tags, folders, and profile.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleExportAll}
                   disabled={exporting}
-                  className="w-full py-2 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium hover:opacity-90 transition disabled:opacity-40"
+                  className="w-full py-1.5 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-semibold hover:opacity-90 transition disabled:opacity-40"
                 >
-                  {exporting ? 'Packing JSON...' : 'Download Full Archive (.json)'}
+                  {exporting ? 'Exporting...' : 'Download JSON (.json)'}
                 </button>
               </div>
 
-              {/* Download Journals in Markdown */}
-              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 flex flex-col justify-between space-y-3">
+              {/* Download Markdown */}
+              <div className="p-4 rounded-xl border border-gray-200/90 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/40 flex flex-col justify-between space-y-3">
                 <div>
                   <div className="flex items-center space-x-2 text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    <FileCheck2 size={15} className="text-emerald-600 dark:text-emerald-400" />
-                    <span>Download Journals (.md)</span>
+                    <FileCheck2 size={14} className="text-emerald-600 dark:text-emerald-400" />
+                    <span>Journals Only (Markdown)</span>
                   </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Export your thoughts formatted as readable Markdown files, ready for Obsidian, Notion, or personal print.
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-relaxed">
+                    Export readable text entries ready for Obsidian, Notion, or personal archival.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={handleDownloadJournals}
                   disabled={downloadingJournals}
-                  className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 text-xs font-medium transition disabled:opacity-40"
+                  className="w-full py-1.5 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-neutral-700 text-xs font-semibold transition disabled:opacity-40"
                 >
-                  {downloadingJournals ? 'Writing Markdown...' : 'Download Journals (.md)'}
-                </button>
-              </div>
-
-              {/* Local Storage Governance */}
-              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="flex items-center space-x-2 text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    <HardDrive size={15} className="text-blue-500" />
-                    <span>Manage Offline Cache (IndexedDB)</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Purge offline cached drafts and entries from this browser's local sandbox storage without affecting cloud entries.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handlePurgeLocalStorage}
-                  disabled={purgingLocal}
-                  className="w-full py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-700 dark:text-gray-300 text-xs font-medium transition"
-                >
-                  {purgingLocal ? 'Purging local storage...' : 'Purge Local Offline Cache'}
-                </button>
-              </div>
-
-              {/* Sessions & Connected Devices */}
-              <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 flex flex-col justify-between space-y-3">
-                <div>
-                  <div className="flex items-center space-x-2 text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    <Laptop size={15} className="text-purple-500" />
-                    <span>Manage Active Sessions</span>
-                  </div>
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                    Current device: <span className="font-mono text-[10px]">{navigator.userAgent.slice(0, 30)}...</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleLogoutAll}
-                  disabled={globalLoggingOut}
-                  className="w-full py-2 px-3 rounded-lg border border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 text-xs font-medium transition"
-                >
-                  {globalLoggingOut ? 'Logging out...' : 'Log Out from All Devices'}
+                  {downloadingJournals ? 'Writing files...' : 'Download Markdown (.md)'}
                 </button>
               </div>
             </div>
 
-            {/* Connected Accounts & OAuth Identities */}
-            <div className="pt-4 border-t border-gray-100 dark:border-gray-800">
-              <h3 className="text-xs font-semibold text-gray-900 dark:text-gray-100 mb-2 flex items-center">
-                <Globe size={14} className="mr-1.5 text-gray-500" />
-                Connected Accounts & Providers
-              </h3>
-              <div className="p-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-neutral-850/30 flex items-center justify-between text-xs">
+            {/* Offline Cache Cleanup */}
+            <div className="pt-3 border-t border-gray-100 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center space-x-1.5 text-xs font-medium text-gray-900 dark:text-gray-200">
+                  <HardDrive size={14} className="text-blue-500" />
+                  <span>Browser Offline Cache</span>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                  Clear local drafts and entries cached in this browser's IndexedDB without deleting cloud entries.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handlePurgeLocalStorage}
+                disabled={purgingLocal}
+                className="py-1.5 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-neutral-800 text-xs font-medium transition self-start sm:self-center"
+              >
+                {purgingLocal ? 'Clearing...' : 'Clear Offline Cache'}
+              </button>
+            </div>
+          </div>
+
+          {/* Granular Sync & Consent Settings */}
+          <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                <UserCheck size={16} className="mr-2 text-neutral-500" />
+                Data & Feature Preferences
+              </h2>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Toggle optional data features and sync mechanisms.
+              </p>
+            </div>
+
+            <div className="divide-y divide-gray-100 dark:divide-gray-800">
+              {/* Cloud Sync */}
+              <div className="py-3 flex items-center justify-between gap-4">
                 <div>
-                  <span className="font-medium text-gray-800 dark:text-gray-200">
-                    Authentication Identity
+                  <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                    Cloud Synchronization
                   </span>
                   <p className="text-[11px] text-gray-500">
-                    {user?.app_metadata?.provider ? `Linked via ${user.app_metadata.provider.toUpperCase()} OAuth` : 'Email & Password Authentication'}
+                    Syncs encrypted journals across devices with Postgres Row Level Security.
                   </p>
                 </div>
-                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                  Verified
-                </span>
+                <input
+                  type="checkbox"
+                  checked={consent.cloudSync}
+                  onChange={() => handleConsentToggle('cloudSync')}
+                  className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                />
+              </div>
+
+              {/* Local Voice */}
+              <div className="py-3 flex items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                    Browser Voice Dictation
+                  </span>
+                  <p className="text-[11px] text-gray-500">
+                    Use browser-native speech recognition for hands-free voice journaling.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={consent.localVoiceProcessing}
+                  onChange={() => handleConsentToggle('localVoiceProcessing')}
+                  className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                />
+              </div>
+
+              {/* Diagnostics */}
+              <div className="py-3 flex items-center justify-between gap-4">
+                <div>
+                  <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                    Anonymous Error Diagnostics
+                  </span>
+                  <p className="text-[11px] text-gray-500">
+                    Sends anonymous bug reports to improve app reliability. No journal content is ever included.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={consent.telemetryAndDiagnostics}
+                  onChange={() => handleConsentToggle('telemetryAndDiagnostics')}
+                  className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Danger Zone: Account Deletion */}
+          <div className="p-4 sm:p-5 rounded-2xl border border-red-200/80 dark:border-red-900/60 bg-red-50/30 dark:bg-red-950/15 space-y-3">
+            <div className="flex items-start space-x-2.5">
+              <AlertTriangle size={17} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-xs font-bold text-red-900 dark:text-red-200">
+                  Delete Account & Erase All Data
+                </h4>
+                <p className="text-[11px] text-red-700/90 dark:text-red-300/80 mt-0.5">
+                  Permanently wipe all journals, media attachments, folders, and profile data from Supabase and local storage.
+                </p>
               </div>
             </div>
 
-            {/* Irreversible Account Erasure */}
-            <div className="pt-4 border-t border-red-100 dark:border-red-950">
-              <div className="p-4 rounded-xl border border-red-200 dark:border-red-900 bg-red-50/40 dark:bg-red-950/20 space-y-3">
-                <div className="flex items-start space-x-2.5">
-                  <AlertTriangle size={18} className="text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-bold text-red-900 dark:text-red-200">
-                      Delete Account (Permanent Erasure)
-                    </h4>
-                    <p className="text-[11px] text-red-700 dark:text-red-300/80 mt-0.5">
-                      Instantly wipe all journals, media attachments, tags, and account records across Supabase and local storage.
-                    </p>
-                  </div>
-                </div>
-
-                {!showDeleteModal ? (
+            {!showDeleteModal ? (
+              <button
+                type="button"
+                onClick={() => setShowDeleteModal(true)}
+                className="py-1.5 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition"
+              >
+                Delete My Account
+              </button>
+            ) : (
+              <div className="p-3 bg-white dark:bg-neutral-900 rounded-xl border border-red-300 dark:border-red-800 space-y-2">
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  Type <span className="font-bold text-red-600">DELETE</span> to confirm permanent account erasure:
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  placeholder="Type DELETE"
+                  className="w-full max-w-xs px-2.5 py-1 text-xs border rounded-lg bg-gray-50 dark:bg-neutral-800"
+                />
+                <div className="flex items-center space-x-2 pt-1">
                   <button
                     type="button"
-                    onClick={() => setShowDeleteModal(true)}
-                    className="py-1.5 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition"
+                    onClick={handleDeleteAccount}
+                    disabled={deleting || deleteConfirmationText !== 'DELETE'}
+                    className="py-1 px-3 rounded-lg bg-red-600 text-white text-xs font-semibold disabled:opacity-40"
                   >
-                    Delete My Account
+                    {deleting ? 'Erasing...' : 'Confirm Deletion'}
                   </button>
-                ) : (
-                  <div className="p-3 bg-white dark:bg-neutral-900 rounded-lg border border-red-300 dark:border-red-800 space-y-2">
-                    <p className="text-xs text-gray-700 dark:text-gray-300">
-                      Type <span className="font-bold text-red-600">DELETE</span> to confirm permanent deletion:
-                    </p>
-                    <input
-                      type="text"
-                      value={deleteConfirmationText}
-                      onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                      placeholder="Type DELETE"
-                      className="w-full max-w-xs px-2.5 py-1 text-xs border rounded bg-gray-50 dark:bg-neutral-800"
-                    />
-                    <div className="flex items-center space-x-2 pt-1">
-                      <button
-                        type="button"
-                        onClick={handleDeleteAccount}
-                        disabled={deleting || deleteConfirmationText !== 'DELETE'}
-                        className="py-1 px-3 rounded bg-red-600 text-white text-xs font-semibold disabled:opacity-40"
-                      >
-                        {deleting ? 'Erasing...' : 'Confirm Delete Everything'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowDeleteModal(false);
-                          setDeleteConfirmationText('');
-                        }}
-                        className="text-xs text-gray-500 hover:underline"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SECTION 2: ENCRYPTION AT REST & ARCHITECTURE TRANSPARENCY */}
-      {activeSubSection === 'encryption' && (
-        <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <Lock size={18} className="mr-2 text-gray-500" />
-              Cryptographic Reality & Encryption Specifications
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Journify practices strict cryptographic transparency. Here is an exact breakdown of what is encrypted, where, and by whom.
-            </p>
-          </div>
-
-          <div className="divide-y divide-gray-100 dark:divide-gray-800">
-            {PRIVACY_SPECIFICATIONS.encryptionDetails.map((spec) => (
-              <div key={spec.domain} className="py-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-xs font-bold text-gray-900 dark:text-gray-100">
-                      {spec.domain}
-                    </span>
-                    <span className="text-[10px] font-mono px-2 py-0.2 rounded bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300">
-                      {spec.protocol}
-                    </span>
-                  </div>
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
-                    spec.status === 'Enforced'
-                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                      : 'bg-blue-100 dark:bg-blue-950 text-blue-800 dark:text-blue-300'
-                  }`}>
-                    {spec.status}
-                  </span>
-                </div>
-
-                <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
-                  {spec.scope}
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-neutral-850 p-2.5 rounded-lg font-mono">
-                  <div><span className="text-gray-400">Cipher / Protocol:</span> {spec.cipher}</div>
-                  <div><span className="text-gray-400">Key Management:</span> {spec.keysHeldBy}</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowDeleteModal(false);
+                      setDeleteConfirmationText('');
+                    }}
+                    className="text-xs text-gray-500 hover:underline"
+                  >
+                    Cancel
+                  </button>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}
 
-      {/* SECTION 3: DATA RETENTION POLICY */}
-      {activeSubSection === 'retention' && (
-        <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-6">
+      {/* TAB 2: PRIVACY POLICY & SECURITY */}
+      {activeTab === 'policy' && (
+        <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs space-y-5 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
           <div>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <Database size={18} className="mr-2 text-gray-500" />
-              Strict Data Retention Policy
+            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Lock size={17} className="text-neutral-500" />
+              Journify Privacy Promise & Security
             </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              We operate on zero data retention beyond what is needed to preserve your journal.
-            </p>
+            <p className="text-[11px] text-gray-400 mt-0.5">Updated September 2026</p>
           </div>
 
-          <div className="space-y-4">
-            <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 space-y-1">
-              <span className="text-xs font-bold text-gray-900 dark:text-gray-100">Journal Entries & Content</span>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {PRIVACY_SPECIFICATIONS.retentionPolicy.journalEntries}
+          <div className="space-y-4 pt-1">
+            <div className="p-3.5 rounded-xl bg-gray-50/60 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800 space-y-1">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs">1. Absolute Data Ownership</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                Your entries belong solely to you. We do not sell user data, we do not train general AI models on your notes, and we never serve third-party advertising.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 space-y-1">
-              <span className="text-xs font-bold text-gray-900 dark:text-gray-100">Media & Photos</span>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {PRIVACY_SPECIFICATIONS.retentionPolicy.mediaAttachments}
+            <div className="p-3.5 rounded-xl bg-gray-50/60 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800 space-y-1">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs">2. Encryption in Transit & at Rest</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                All synchronization with cloud servers runs over TLS 1.3 encryption. At rest, data is stored on encrypted disks (AES-256). PostgreSQL Row-Level Security ensures only your authenticated credentials can read or write your journals.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 space-y-1">
-              <span className="text-xs font-bold text-gray-900 dark:text-gray-100">Deleted Rows & Items</span>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {PRIVACY_SPECIFICATIONS.retentionPolicy.deletedItems}
+            <div className="p-3.5 rounded-xl bg-gray-50/60 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800 space-y-1">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs">3. Data Retention & Instant Deletion</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                We only retain data while your account is active. When you delete an entry or your account, it is wiped permanently and irrevocably from cloud servers and local storage.
               </p>
             </div>
 
-            <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 space-y-1">
-              <span className="text-xs font-bold text-gray-900 dark:text-gray-100">Account Erasure</span>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {PRIVACY_SPECIFICATIONS.retentionPolicy.accountWipe}
-              </p>
-            </div>
-
-            <div className="p-4 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/50 space-y-1">
-              <span className="text-xs font-bold text-gray-900 dark:text-gray-100">Local Browser Cache</span>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                {PRIVACY_SPECIFICATIONS.retentionPolicy.localIndexedDB}
+            <div className="p-3.5 rounded-xl bg-gray-50/60 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800 space-y-1">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 text-xs">4. GDPR & CCPA Compliance</h3>
+              <p className="text-gray-600 dark:text-gray-400">
+                You have the permanent right to access, export full machine-readable JSON or Markdown archives, and execute the right to be forgotten anytime.
               </p>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* SECTION 4: CONSENT MANAGEMENT */}
-      {activeSubSection === 'consent' && (
-        <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-6">
-          <div>
-            <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center">
-              <UserCheck size={18} className="mr-2 text-gray-500" />
-              Granular Consent Management
-            </h2>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Control exactly what data processes run. You can revoke consent at any time.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {/* Essential Storage */}
-            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 block">
-                  Essential Application Storage
-                </span>
-                <p className="text-[11px] text-gray-500">
-                  Required to save session tokens and drafts in your browser. Cannot be disabled.
-                </p>
-              </div>
-              <input type="checkbox" checked={consent.essentialStorage} disabled className="h-4 w-4 rounded opacity-60" />
-            </div>
-
-            {/* Cloud Sync */}
-            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 block">
-                  Cloud Synchronization (Supabase)
-                </span>
-                <p className="text-[11px] text-gray-500">
-                  Syncs encrypted journal entries across your devices using PostgreSQL Row Level Security.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={consent.cloudSync}
-                onChange={() => handleConsentToggle('cloudSync')}
-                className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
-              />
-            </div>
-
-            {/* Local Voice Dictation */}
-            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 block">
-                  Local Speech-to-Text Voice Processing
-                </span>
-                <p className="text-[11px] text-gray-500">
-                  Permits browser-native speech recognition for voice journaling. Audio is processed via your browser's speech engine.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={consent.localVoiceProcessing}
-                onChange={() => handleConsentToggle('localVoiceProcessing')}
-                className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
-              />
-            </div>
-
-            {/* Anonymous Diagnostics */}
-            <div className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold text-gray-900 dark:text-gray-100 block">
-                  Anonymous Diagnostics & Error Tracking
-                </span>
-                <p className="text-[11px] text-gray-500">
-                  Help improve Journify with anonymous error reports. No entry titles or content are ever sent.
-                </p>
-              </div>
-              <input
-                type="checkbox"
-                checked={consent.telemetryAndDiagnostics}
-                onChange={() => handleConsentToggle('telemetryAndDiagnostics')}
-                className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* SECTION 5: PRIVACY POLICY */}
-      {activeSubSection === 'privacy-policy' && (
-        <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-4 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
-            Journify Privacy Policy & Promise
-          </h2>
-          <p className="text-[11px] text-gray-500">Effective Date: September 2026</p>
-
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 pt-2">1. Fundamental Philosophy</h3>
-          <p>
-            Journify is a sanctuary for personal thought. We believe personal journals are the most intimate digital records in existence. We do not sell your data, we do not train general AI models on your journal entries, and we do not serve third-party ads.
-          </p>
-
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 pt-2">2. Information We Collect</h3>
-          <p>
-            We only store the data you explicitly supply: your email address for account authentication, your profile username, and the journal entries and photos you create.
-          </p>
-
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 pt-2">3. Storage & Encryption</h3>
-          <p>
-            All data in transit is encrypted using modern TLS 1.3 encryption. At rest, data is stored on encrypted disks managed with AES-256 transparent database volume encryption. Access to your entries is enforced through PostgreSQL Row Level Security (RLS) bound strictly to your authenticated User ID.
-          </p>
-
-          <h3 className="font-bold text-gray-900 dark:text-gray-100 pt-2">4. Your GDPR & CCPA Rights</h3>
-          <p>
-            Under global privacy standards, you maintain absolute right of access, right to rectification, right to data portability (downloading your JSON/Markdown archive at any time), and the right to be forgotten (instant, irreversible account deletion).
-          </p>
         </div>
       )}
     </div>

@@ -20,7 +20,6 @@ const EditEntryPage = lazy(() => import('./pages/EditEntryPage.tsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.tsx'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage.tsx'));
 const FolderDashboard = lazy(() => import('./pages/FolderDashboard'));
-const PrivacyCenterPage = lazy(() => import('./pages/PrivacyCenterPage'));
 
 // Sleek minimal page loader
 function PageLoadingFallback() {
@@ -91,7 +90,7 @@ function App() {
                   <Route path="entry/:id/edit" element={<EditEntryPage />} />
                   <Route path="calendar" element={<CalendarPage />} />
                   <Route path="profile" element={<ProfilePage />} />
-                  <Route path="privacy" element={<PrivacyCenterPage />} />
+                  <Route path="privacy" element={<Navigate to="/profile?tab=data" replace />} />
                   <Route path="folder/:folderId" element={<FolderDashboard />} />
                 </Route>
               </Routes>

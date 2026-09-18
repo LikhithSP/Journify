@@ -15,12 +15,18 @@ import {
   AlertCircle,
   Bell,
   Flame,
-  Clock
+  Clock,
+  HardDrive,
+  Database,
+  UserCheck
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { validateFileUpload, sanitizeUploadFileName, SECURITY_SPECS } from '../lib/security';
 import { NotificationService } from '../services/notificationService';
 import type { NotificationSettings } from '../services/notificationService';
+import { PrivacyService } from '../services/privacyService';
+import type { ConsentSettings } from '../services/privacyService';
+import { OfflineDB } from '../services/offlineDB';
 
 export function useProfileInfo(userId?: string) {
   const [profile, setProfile] = useState<{ avatar_url?: string; name?: string } | null>(null);
@@ -50,6 +56,7 @@ export function useProfileInfo(userId?: string) {
 export default function ProfilePage() {
   const { user, session, signOut, updatePassword, exportUserData, deleteAccount } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [profile, setProfile] = useState({
     name: '',
@@ -58,7 +65,12 @@ export default function ProfilePage() {
     email: user?.email || '',
   });
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'data'>('profile');
+  const tabParam = searchParams.get('tab');
+  const initialTab = (tabParam === 'data' || tabParam === 'security' || tabParam === 'notifications' || tabParam === 'profile')
+    ? tabParam
+    : 'profile';
+
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'notifications' | 'data'>(initialTab);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -78,11 +90,22 @@ export default function ProfilePage() {
   const [updatingPassword, setUpdatingPassword] = useState(false);
   const [globalLoggingOut, setGlobalLoggingOut] = useState(false);
 
-  // Data / Danger zone state
+  // Privacy & Data tab state
+  const [privacySubTab, setPrivacySubTab] = useState<'controls' | 'policy'>('controls');
+  const [consent, setConsent] = useState<ConsentSettings>(() => PrivacyService.getConsent());
   const [exporting, setExporting] = useState(false);
+  const [downloadingJournals, setDownloadingJournals] = useState(false);
+  const [purgingLocal, setPurgingLocal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
   const [deleting, setDeleting] = useState(false);
+
+  // Sync tab with URL if changed
+  useEffect(() => {
+    if (tabParam && (tabParam === 'data' || tabParam === 'security' || tabParam === 'notifications' || tabParam === 'profile')) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
 
   useEffect(() => {
     async function fetchProfile() {
@@ -209,6 +232,14 @@ export default function ProfilePage() {
     }
   };
 
+  const handleConsentToggle = (key: keyof ConsentSettings) => {
+    if (key === 'essentialStorage') return;
+    const updated = { ...consent, [key]: !consent[key] };
+    setConsent(updated);
+    PrivacyService.saveConsent(updated);
+    setStatusMessage({ text: 'Privacy preference updated successfully.', type: 'success' });
+  };
+
   const handleExportData = async () => {
     setExporting(true);
     setStatusMessage(null);
@@ -233,6 +264,54 @@ export default function ProfilePage() {
       setStatusMessage({ text: `Data export failed: ${err?.message}`, type: 'error' });
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleDownloadJournals = async () => {
+    setDownloadingJournals(true);
+    setStatusMessage(null);
+    try {
+      const { data, error } = await exportUserData();
+      if (error || !data) throw error || new Error('Failed to fetch journal entries');
+
+      const entries = data.journalEntries || [];
+      let markdownContent = `# Journify Journal Archive\nExported: ${new Date().toLocaleString()}\nUser: ${user?.email}\nTotal Entries: ${entries.length}\n\n---\n\n`;
+
+      entries.forEach((e: any, index: number) => {
+        const plainContent = (e.content || '').replace(/<p>/g, '\n').replace(/<\/p>/g, '\n').replace(/<[^>]*>/g, '');
+        markdownContent += `## ${index + 1}. ${e.title || 'Untitled Entry'}\n`;
+        markdownContent += `**Date:** ${new Date(e.created_at).toLocaleString()} | **Mood:** ${e.mood || 'None'} | **Tags:** ${e.tags?.join(', ') || 'None'}\n\n`;
+        markdownContent += `${plainContent.trim()}\n\n---\n\n`;
+      });
+
+      const mdBlob = new Blob([markdownContent], { type: 'text/markdown;charset=utf-8' });
+      const downloadUrl = URL.createObjectURL(mdBlob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `my_journals_${new Date().toISOString().slice(0, 10)}.md`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+
+      setStatusMessage({ text: 'Journals downloaded in Markdown (.md) format.', type: 'success' });
+    } catch (err: any) {
+      setStatusMessage({ text: `Journal download failed: ${err.message}`, type: 'error' });
+    } finally {
+      setDownloadingJournals(false);
+    }
+  };
+
+  const handlePurgeLocalStorage = async () => {
+    if (!user) return;
+    setPurgingLocal(true);
+    try {
+      await OfflineDB.clearAll();
+      setStatusMessage({ text: 'Browser offline IndexedDB cache cleared.', type: 'success' });
+    } catch (e: any) {
+      setStatusMessage({ text: `Failed to clear offline storage: ${e.message}`, type: 'error' });
+    } finally {
+      setPurgingLocal(false);
     }
   };
 
@@ -853,110 +932,288 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Tab 4: Data Export & Danger Zone */}
+        {/* Tab 4: Privacy Center & Data Governance */}
         {activeTab === 'data' && (
-          <div className="p-6 space-y-8">
-            {/* Privacy Center Callout */}
-            <div className="p-4 rounded-xl bg-gray-50 dark:bg-neutral-800/40 border border-gray-200 dark:border-gray-800 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <ShieldCheck size={20} className="text-black dark:text-white" />
+          <div className="p-6 space-y-6">
+            {/* Privacy Sub-Navigation (Controls vs Policy) */}
+            <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+              <div className="flex items-center space-x-2">
+                <ShieldCheck size={18} className="text-black dark:text-white" />
                 <div>
-                  <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">
-                    Dedicated Privacy Center & Consent Governance
-                  </h4>
+                  <h3 className="text-xs font-bold text-gray-900 dark:text-gray-100 uppercase tracking-wider">
+                    Privacy Center
+                  </h3>
                   <p className="text-[11px] text-gray-500">
-                    Review cryptographic transparency, encryption at rest, data retention policies, and consent controls.
+                    Control data portability, sync settings, and cryptographic safeguards.
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => navigate('/privacy')}
-                className="py-1.5 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium hover:opacity-90 transition"
-              >
-                Open Privacy Center
-              </button>
+              <div className="flex gap-1.5 p-0.5 bg-gray-100 dark:bg-neutral-800 rounded-lg text-xs">
+                <button
+                  type="button"
+                  onClick={() => setPrivacySubTab('controls')}
+                  className={`px-3 py-1 rounded-md font-medium transition ${
+                    privacySubTab === 'controls'
+                      ? 'bg-white dark:bg-neutral-700 text-black dark:text-white shadow-xs'
+                      : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Controls & Export
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPrivacySubTab('policy')}
+                  className={`px-3 py-1 rounded-md font-medium transition ${
+                    privacySubTab === 'policy'
+                      ? 'bg-white dark:bg-neutral-700 text-black dark:text-white shadow-xs'
+                      : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'
+                  }`}
+                >
+                  Privacy Promise
+                </button>
+              </div>
             </div>
 
-            {/* GDPR Data Export */}
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center">
-                <Download size={16} className="mr-2 text-gray-500" />
-                Export Account Data (GDPR Portability)
-              </h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
-                Download a complete, machine-readable JSON archive containing your journal entries, folders, tags, and account metadata.
-              </p>
-              <button
-                type="button"
-                onClick={handleExportData}
-                disabled={exporting}
-                className="inline-flex items-center py-2 px-4 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 text-xs font-semibold text-gray-900 dark:text-gray-100 transition shadow-sm disabled:opacity-50"
-              >
-                <FileCheck2 size={15} className="mr-2 text-emerald-600 dark:text-emerald-400" />
-                {exporting ? 'Generating JSON package...' : 'Download My Data Archive'}
-              </button>
-            </div>
-
-            {/* Danger Zone */}
-            <div className="pt-6 border-t border-red-100 dark:border-red-950/50">
-              <div className="p-5 rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20">
-                <div className="flex items-start space-x-3 mb-4">
-                  <AlertTriangle className="text-red-600 dark:text-red-400 w-5 h-5 flex-shrink-0 mt-0.5" />
+            {privacySubTab === 'controls' ? (
+              <div className="space-y-6">
+                {/* Data Portability & Export */}
+                <div className="p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-50/50 dark:bg-neutral-850/30 space-y-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-red-900 dark:text-red-200">
-                      Danger Zone: Delete Account
+                    <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      <Database size={15} className="mr-2 text-gray-500" />
+                      Data Portability & Export
                     </h4>
-                    <p className="text-xs text-red-700 dark:text-red-300/80 mt-1 leading-relaxed">
-                      Permanently erase your account, all journal entries, folders, and uploaded media. This action is irrevocable and cannot be undone.
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Your journal is your intellectual property. Download archives in standard open formats anytime.
                     </p>
                   </div>
-                </div>
 
-                {!showDeleteModal ? (
-                  <button
-                    type="button"
-                    onClick={() => setShowDeleteModal(true)}
-                    className="py-2 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition"
-                  >
-                    Request Account Deletion
-                  </button>
-                ) : (
-                  <div className="p-4 bg-white dark:bg-neutral-900 rounded-lg border border-red-200 dark:border-red-800 space-y-3">
-                    <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
-                      To confirm complete deletion, please type <span className="font-bold text-red-600">DELETE</span> in the box below:
-                    </p>
-                    <input
-                      type="text"
-                      value={deleteConfirmationText}
-                      onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                      placeholder="Type DELETE"
-                      className="w-full max-w-xs px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-700 rounded bg-gray-50 dark:bg-neutral-800 outline-none"
-                    />
-                    <div className="flex items-center space-x-3 pt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* JSON Archive */}
+                    <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900 flex flex-col justify-between space-y-3">
+                      <div>
+                        <div className="flex items-center space-x-2 text-xs font-semibold text-gray-900 dark:text-gray-100">
+                          <Download size={14} className="text-gray-500" />
+                          <span>Full Data Archive (JSON)</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                          Machine-readable export with entries, folders, tags, and account settings.
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        onClick={handleDeleteAccount}
-                        disabled={deleting || deleteConfirmationText !== 'DELETE'}
-                        className="py-1.5 px-4 rounded bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-40 transition"
+                        onClick={handleExportData}
+                        disabled={exporting}
+                        className="w-full py-1.5 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-semibold hover:opacity-90 transition disabled:opacity-40"
                       >
-                        {deleting ? 'Deleting account...' : 'Permanently Delete Everything'}
+                        {exporting ? 'Generating package...' : 'Download JSON (.json)'}
                       </button>
+                    </div>
+
+                    {/* Markdown Journals */}
+                    <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900 flex flex-col justify-between space-y-3">
+                      <div>
+                        <div className="flex items-center space-x-2 text-xs font-semibold text-gray-900 dark:text-gray-100">
+                          <FileCheck2 size={14} className="text-emerald-600 dark:text-emerald-400" />
+                          <span>Journals Only (Markdown)</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-1 leading-relaxed">
+                          Formatted text ready to open in Obsidian, Notion, or personal markdown notes.
+                        </p>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => {
-                          setShowDeleteModal(false);
-                          setDeleteConfirmationText('');
-                        }}
-                        className="text-xs text-gray-500 hover:text-black dark:hover:text-white"
+                        onClick={handleDownloadJournals}
+                        disabled={downloadingJournals}
+                        className="w-full py-1.5 px-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-neutral-700 text-xs font-semibold transition disabled:opacity-40"
                       >
-                        Cancel
+                        {downloadingJournals ? 'Writing file...' : 'Download Markdown (.md)'}
                       </button>
                     </div>
                   </div>
-                )}
+
+                  {/* Browser IndexedDB Cache Purge */}
+                  <div className="pt-3 border-t border-gray-200/80 dark:border-gray-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                      <div className="flex items-center space-x-1.5 text-xs font-medium text-gray-900 dark:text-gray-200">
+                        <HardDrive size={13} className="text-blue-500" />
+                        <span>Browser Offline Storage</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        Clear local offline cache and temporary drafts from this device's browser memory.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handlePurgeLocalStorage}
+                      disabled={purgingLocal}
+                      className="py-1.5 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-white dark:hover:bg-neutral-800 text-xs font-medium transition self-start sm:self-center"
+                    >
+                      {purgingLocal ? 'Purging...' : 'Clear Offline Cache'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Privacy & Feature Consent */}
+                <div className="p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900 space-y-4">
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100 flex items-center">
+                      <UserCheck size={15} className="mr-2 text-gray-500" />
+                      Consent & Feature Preferences
+                    </h4>
+                    <p className="text-[11px] text-gray-500 mt-0.5">
+                      Fine-tune sync behaviors and peripheral permissions.
+                    </p>
+                  </div>
+
+                  <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                    <div className="py-2.5 flex items-center justify-between gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                          Cloud Synchronization
+                        </span>
+                        <p className="text-[11px] text-gray-500">
+                          Keeps notes synchronized across devices with Postgres Row-Level Security.
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={consent.cloudSync}
+                        onChange={() => handleConsentToggle('cloudSync')}
+                        className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                      />
+                    </div>
+
+                    <div className="py-2.5 flex items-center justify-between gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                          Browser Voice Dictation
+                        </span>
+                        <p className="text-[11px] text-gray-500">
+                          Use browser-native speech recognition for voice journaling.
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={consent.localVoiceProcessing}
+                        onChange={() => handleConsentToggle('localVoiceProcessing')}
+                        className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                      />
+                    </div>
+
+                    <div className="py-2.5 flex items-center justify-between gap-4">
+                      <div>
+                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100 block">
+                          Anonymous Error Diagnostics
+                        </span>
+                        <p className="text-[11px] text-gray-500">
+                          Reports client errors to fix crashes. Never includes journal text.
+                        </p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={consent.telemetryAndDiagnostics}
+                        onChange={() => handleConsentToggle('telemetryAndDiagnostics')}
+                        className="h-4 w-4 rounded border-gray-300 text-black dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Danger Zone: Account Deletion */}
+                <div className="pt-2 border-t border-red-100 dark:border-red-950/50">
+                  <div className="p-5 rounded-2xl border border-red-200 dark:border-red-900/60 bg-red-50/50 dark:bg-red-950/20">
+                    <div className="flex items-start space-x-3 mb-4">
+                      <AlertTriangle className="text-red-600 dark:text-red-400 w-5 h-5 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="text-sm font-semibold text-red-900 dark:text-red-200">
+                          Danger Zone: Delete Account
+                        </h4>
+                        <p className="text-xs text-red-700 dark:text-red-300/80 mt-1 leading-relaxed">
+                          Permanently erase your account, all journal entries, folders, and uploaded media. This action is irrevocable and cannot be undone.
+                        </p>
+                      </div>
+                    </div>
+
+                    {!showDeleteModal ? (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteModal(true)}
+                        className="py-2 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold transition"
+                      >
+                        Request Account Deletion
+                      </button>
+                    ) : (
+                      <div className="p-4 bg-white dark:bg-neutral-900 rounded-xl border border-red-200 dark:border-red-800 space-y-3">
+                        <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
+                          To confirm complete deletion, please type <span className="font-bold text-red-600">DELETE</span> in the box below:
+                        </p>
+                        <input
+                          type="text"
+                          value={deleteConfirmationText}
+                          onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                          placeholder="Type DELETE"
+                          className="w-full max-w-xs px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-neutral-800 outline-none"
+                        />
+                        <div className="flex items-center space-x-3 pt-2">
+                          <button
+                            type="button"
+                            onClick={handleDeleteAccount}
+                            disabled={deleting || deleteConfirmationText !== 'DELETE'}
+                            className="py-1.5 px-4 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold disabled:opacity-40 transition"
+                          >
+                            {deleting ? 'Deleting account...' : 'Permanently Delete Everything'}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowDeleteModal(false);
+                              setDeleteConfirmationText('');
+                            }}
+                            className="text-xs text-gray-500 hover:text-black dark:hover:text-white"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              /* Sub-Tab 2: Privacy Promise & Security */
+              <div className="p-5 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-neutral-900 space-y-4 text-xs leading-relaxed text-gray-700 dark:text-gray-300">
+                <div className="flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-gray-800">
+                  <Lock size={16} className="text-gray-500" />
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                    Journify Privacy Promise & Security Model
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-3.5 rounded-xl bg-gray-50/70 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800">
+                    <h5 className="font-bold text-gray-900 dark:text-gray-100 text-xs mb-1">1. Absolute Data Ownership</h5>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      Your journal entries belong entirely to you. We do not sell user data, train public AI models on your memories, or track you across the web.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-gray-50/70 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800">
+                    <h5 className="font-bold text-gray-900 dark:text-gray-100 text-xs mb-1">2. Encryption in Transit & At Rest</h5>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      All data in flight travels through TLS 1.3 encryption. At rest, data is protected by disk-level AES-256 and Supabase Postgres Row Level Security isolating every row to your user UUID.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-gray-50/70 dark:bg-neutral-850/50 border border-gray-100 dark:border-gray-800">
+                    <h5 className="font-bold text-gray-900 dark:text-gray-100 text-xs mb-1">3. Right to be Forgotten (GDPR)</h5>
+                    <p className="text-gray-600 dark:text-gray-400">
+                      You can download your entire journal at any time in JSON or Markdown and delete your entire account permanently with zero leftover server residue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

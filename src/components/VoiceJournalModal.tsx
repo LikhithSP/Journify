@@ -8,9 +8,19 @@ import {
   FileText, 
   ArrowRight,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  Tag,
+  Plus
 } from 'lucide-react';
 import { VoiceJournalService } from '../services/voiceJournalService';
+
+const AVAILABLE_MOODS: Array<{ id: 'joyful' | 'peaceful' | 'sad' | 'angry' | 'anxious'; label: string; emoji: string }> = [
+  { id: 'joyful', label: 'Joyful', emoji: '😊' },
+  { id: 'peaceful', label: 'Peaceful', emoji: '😌' },
+  { id: 'sad', label: 'Sad', emoji: '😔' },
+  { id: 'angry', label: 'Angry', emoji: '😠' },
+  { id: 'anxious', label: 'Anxious', emoji: '😰' },
+];
 
 interface VoiceJournalModalProps {
   isOpen: boolean;
@@ -35,6 +45,13 @@ export default function VoiceJournalModal({
   const [audioLevel, setAudioLevel] = useState<number[]>([15, 30, 45, 20, 35, 60, 40, 25, 10]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // User-customizable completion fields
+  const [title, setTitle] = useState('');
+  const [mood, setMood] = useState<'joyful' | 'peaceful' | 'sad' | 'angry' | 'anxious' | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTagInput, setNewTagInput] = useState('');
+  const [hasManuallyEditedTitle, setHasManuallyEditedTitle] = useState(false);
+
   const voiceServiceRef = useRef<VoiceJournalService | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const waveAnimRef = useRef<NodeJS.Timeout | null>(null);
@@ -57,6 +74,11 @@ export default function VoiceJournalModal({
       setInterimTranscript('');
       setRecordingDuration(0);
       setErrorMessage(null);
+      setTitle('');
+      setMood(null);
+      setTags([]);
+      setNewTagInput('');
+      setHasManuallyEditedTitle(false);
     }
   }, [isOpen]);
 
@@ -128,6 +150,11 @@ export default function VoiceJournalModal({
     setTranscript('');
     setInterimTranscript('');
     setRecordingDuration(0);
+    setTitle('');
+    setMood(null);
+    setTags([]);
+    setNewTagInput('');
+    setHasManuallyEditedTitle(false);
   };
 
   // Convert Speech Transcript -> Journal Entry
@@ -139,10 +166,10 @@ export default function VoiceJournalModal({
     const analysis = VoiceJournalService.analyzeTranscript(fullText);
 
     onApplyToEditor({
-      title: analysis.title,
+      title: title.trim() || analysis.title,
       contentHtml: analysis.formattedHtml,
-      mood: analysis.suggestedMood,
-      tags: analysis.tags,
+      mood: mood !== null ? mood : analysis.suggestedMood,
+      tags: tags.length > 0 ? tags : analysis.tags,
     });
 
     onClose();
@@ -158,6 +185,33 @@ export default function VoiceJournalModal({
   // Live analysis preview
   const liveAnalysis = VoiceJournalService.analyzeTranscript((transcript + ' ' + interimTranscript).trim());
   const hasContent = !!(transcript.trim() || interimTranscript.trim());
+
+  // Automatically sync suggestions into state as user speaks if they haven't manually modified them yet
+  useEffect(() => {
+    if (hasContent && !isRecording) {
+      if (!hasManuallyEditedTitle && liveAnalysis.title && !title) {
+        setTitle(liveAnalysis.title);
+      }
+      if (mood === null && liveAnalysis.suggestedMood) {
+        setMood(liveAnalysis.suggestedMood);
+      }
+      if (tags.length === 0 && liveAnalysis.tags.length > 0) {
+        setTags(liveAnalysis.tags);
+      }
+    }
+  }, [hasContent, isRecording, liveAnalysis.title, liveAnalysis.suggestedMood]);
+
+  const handleAddTag = () => {
+    const clean = newTagInput.trim().replace(/^#/, '').toLowerCase();
+    if (clean && !tags.includes(clean)) {
+      setTags([...tags, clean]);
+    }
+    setNewTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter((t) => t !== tagToRemove));
+  };
 
   if (!isOpen) return null;
 
@@ -292,43 +346,121 @@ export default function VoiceJournalModal({
             </div>
           </div>
 
-          {/* AI / Smart Analysis Preview */}
+          {/* Completion Details: Title, Mood & Tags customization */}
           {hasContent && (
             <motion.div
               initial={{ opacity: 0, y: 5 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 text-xs space-y-2"
+              className="p-4 rounded-xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200 dark:border-neutral-700/80 text-xs space-y-3.5"
             >
-              <div className="flex items-center justify-between text-blue-900 dark:text-blue-200 font-semibold">
-                <span className="flex items-center">
-                  <Sparkles size={13} className="mr-1.5 text-blue-600 dark:text-blue-400" />
-                  Smart Journal Extraction Preview
+              <div className="flex items-center justify-between text-neutral-900 dark:text-neutral-100 font-semibold border-b border-neutral-200/70 dark:border-neutral-700 pb-2">
+                <span className="flex items-center text-xs">
+                  <Sparkles size={13} className="mr-1.5 text-amber-500 dark:text-amber-400" />
+                  Entry Details
                 </span>
+                <span className="text-[11px] font-normal text-neutral-500">Customize before saving</span>
               </div>
 
-              <div className="space-y-1 text-gray-700 dark:text-gray-300">
-                <div>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">Derived Title: </span>
-                  <span>{liveAnalysis.title}</span>
+              {/* Title input */}
+              <div className="space-y-1">
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 text-[11px]">
+                  What should be the title?
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setHasManuallyEditedTitle(true);
+                  }}
+                  placeholder={liveAnalysis.title || 'Give your entry a title...'}
+                  className="w-full px-3 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 text-xs focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:focus:ring-neutral-500 transition"
+                />
+              </div>
+
+              {/* Mood selector */}
+              <div className="space-y-1.5">
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 text-[11px]">
+                  How are you feeling? (Mood)
+                </label>
+                <div className="flex flex-wrap gap-1.5">
+                  {AVAILABLE_MOODS.map((m) => {
+                    const isSelected = mood === m.id;
+                    return (
+                      <button
+                        key={m.id}
+                        type="button"
+                        onClick={() => setMood(isSelected ? null : m.id)}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition border ${
+                          isSelected
+                            ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border-neutral-900 dark:border-white shadow-xs'
+                            : 'bg-white dark:bg-neutral-900 border-neutral-200 dark:border-neutral-700 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+                        }`}
+                      >
+                        <span>{m.emoji}</span>
+                        <span>{m.label}</span>
+                      </button>
+                    );
+                  })}
+                  {mood && (
+                    <button
+                      type="button"
+                      onClick={() => setMood(null)}
+                      className="text-[10px] text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 underline px-1"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
-                {liveAnalysis.suggestedMood && (
-                  <div className="flex items-center space-x-1.5 pt-0.5">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">Detected Mood: </span>
-                    <span className="px-2 py-0.5 rounded-full bg-white dark:bg-neutral-800 border border-blue-200 dark:border-blue-800 font-medium capitalize">
-                      {liveAnalysis.suggestedMood}
+              </div>
+
+              {/* Tags editor */}
+              <div className="space-y-1.5">
+                <label className="block font-medium text-neutral-700 dark:text-neutral-300 text-[11px] flex items-center gap-1">
+                  <Tag size={11} className="text-neutral-400" />
+                  <span>Tags</span>
+                </label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-neutral-200/80 dark:bg-neutral-700 text-neutral-800 dark:text-neutral-200 text-[11px]"
+                    >
+                      <span>#{t}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(t)}
+                        className="hover:text-red-500 transition"
+                      >
+                        <X size={11} />
+                      </button>
                     </span>
+                  ))}
+
+                  <div className="inline-flex items-center gap-1">
+                    <input
+                      type="text"
+                      value={newTagInput}
+                      onChange={(e) => setNewTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                      placeholder="Add tag + Enter"
+                      className="px-2 py-0.5 rounded-md border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-[11px] text-neutral-800 dark:text-neutral-200 placeholder-neutral-400 focus:outline-none w-28"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTag}
+                      className="p-1 rounded bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-300 dark:hover:bg-neutral-600 transition"
+                      title="Add Tag"
+                    >
+                      <Plus size={11} />
+                    </button>
                   </div>
-                )}
-                {liveAnalysis.tags.length > 0 && (
-                  <div className="flex items-center space-x-1 pt-0.5">
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">Suggested Tags: </span>
-                    {liveAnalysis.tags.map((t) => (
-                      <span key={t} className="px-1.5 py-0.2 rounded bg-blue-100/80 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-[10px]">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                </div>
               </div>
             </motion.div>
           )}

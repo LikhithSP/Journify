@@ -289,16 +289,6 @@ export default function Layout() {
                   </button>
                 </div>
 
-                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/privacy') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
-                  <ShieldCheck size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
-                  <button 
-                    onClick={() => navigate('/privacy')}
-                    className="flex-1 text-left"
-                  >
-                    Privacy Center
-                  </button>
-                </div>
-
                 {/* Hierarchical Folders & Subfolders Section */}
                 <div className="mt-4 px-2">
                   <div className="flex items-center justify-between mb-2">
@@ -402,7 +392,7 @@ export default function Layout() {
       )}
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)] pb-20 lg:pb-0">
-        <div className="px-4 py-6 md:px-10 md:py-8 lg:px-14 max-w-6xl mx-auto">
+        <div className="px-4 py-6 md:px-8 md:py-8 lg:px-10 max-w-7xl mx-auto">
           <Outlet context={{ setDraggedJournalId }} />
         </div>
       </main>

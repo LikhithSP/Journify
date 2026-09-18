@@ -116,267 +116,271 @@ export default function CalendarPage() {
   const selectedDayEntries = entriesByDate.get(selectedDateKey) || [];
 
   return (
-    <div className="max-w-5xl mx-auto py-4 px-2 space-y-6">
+    <div className="max-w-7xl mx-auto py-2 px-1 sm:px-2 space-y-4">
       {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-gray-100 dark:border-gray-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-800">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center">
-            <CalendarIcon className="mr-2.5 h-6 w-6 text-black dark:text-white" />
+          <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center">
+            <CalendarIcon className="mr-2 h-5 w-5 text-black dark:text-white" />
             Calendar & Timeline
           </h1>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
             Navigate your thoughts through time. Review moods, tags, and word counts per day.
           </p>
         </div>
 
-        {/* Global Streak Counter */}
-        <div className="flex items-center space-x-3">
+        {/* Global Streak Counter & Quick Action */}
+        <div className="flex items-center space-x-2.5">
           {loading && (
             <span className="text-[11px] text-gray-400 animate-pulse">Syncing dates...</span>
           )}
-          <div className="flex items-center px-3 py-1.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 text-xs font-semibold">
-            <Flame size={16} className="mr-1.5 text-orange-500 fill-orange-500 animate-bounce" />
+          <div className="flex items-center px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 text-xs font-semibold">
+            <Flame size={14} className="mr-1 text-orange-500 fill-orange-500 animate-bounce" />
             <span>{currentStreak}-day streak</span>
           </div>
 
           <button
             onClick={() => navigate('/entry/new')}
-            className="flex items-center px-3 py-1.5 rounded-xl bg-black dark:bg-white text-white dark:text-black text-xs font-semibold hover:opacity-90 transition shadow-sm"
+            className="flex items-center px-3 py-1 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-semibold hover:opacity-90 transition shadow-xs"
           >
-            <Plus size={14} className="mr-1" />
+            <Plus size={13} className="mr-1" />
             <span>New Entry</span>
           </button>
         </div>
       </div>
 
-      {/* Main Calendar Card */}
-      <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
-        {/* Month Selector Bar */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <h2 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-              {format(currentMonth, 'MMMM yyyy')}
-            </h2>
-            <button
-              onClick={() => {
-                setCurrentMonth(new Date());
-                setSelectedDate(new Date());
-              }}
-              className="px-2 py-0.5 rounded text-[11px] font-medium text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
-            >
-              Today
-            </button>
-          </div>
-
-          <div className="flex items-center space-x-1">
-            <button
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-600 dark:text-gray-300 transition"
-              title="Previous month"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <button
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-              className="p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-600 dark:text-gray-300 transition"
-              title="Next month"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
-        </div>
-
-        {/* Days of Week Header (M T W T F S S) */}
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-gray-400 dark:text-gray-500">
-          <div>M</div>
-          <div>T</div>
-          <div>W</div>
-          <div>T</div>
-          <div>F</div>
-          <div>S</div>
-          <div>S</div>
-        </div>
-
-        {/* Calendar Day Grid */}
-        <div className="grid grid-cols-7 gap-2">
-          {days.map((day) => {
-            const dateKey = format(day, 'yyyy-MM-dd');
-            const dayEntries = entriesByDate.get(dateKey) || [];
-            const hasEntries = dayEntries.length > 0;
-            const isSelected = isSameDay(day, selectedDate);
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const isCurrentDay = isToday(day);
-
-            // Primary mood and word count
-            const primaryEntry = dayEntries[0];
-            const mood = primaryEntry?.mood;
-            const totalWords = dayEntries.reduce((acc, curr) => {
-              const words = curr.content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-              return acc + words;
-            }, 0);
-
-            return (
-              <div
-                key={dateKey}
-                onClick={() => setSelectedDate(day)}
-                className={`min-h-[85px] sm:min-h-[100px] p-2 rounded-xl border transition-all cursor-pointer flex flex-col justify-between ${
-                  !isCurrentMonth
-                    ? 'opacity-30 border-transparent hover:border-gray-200 dark:hover:border-gray-800'
-                    : isSelected
-                    ? 'border-black dark:border-white ring-1 ring-black dark:ring-white bg-gray-50/80 dark:bg-neutral-800/80 shadow-sm'
-                    : hasEntries
-                    ? 'border-gray-200 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600 bg-white dark:bg-neutral-900'
-                    : 'border-gray-100 dark:border-gray-850 hover:bg-gray-50 dark:hover:bg-neutral-850'
-                }`}
+      {/* Side-by-Side Grid Container on Desktop (PC view) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 xl:gap-5 items-start">
+        {/* Main Calendar Card (Left Column) */}
+        <div className="lg:col-span-7 xl:col-span-8 bg-white dark:bg-neutral-900 border border-gray-200/90 dark:border-gray-800 rounded-2xl shadow-xs p-4 sm:p-5 space-y-3.5">
+          {/* Month Selector Bar */}
+          <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center space-x-2">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-gray-900 dark:text-gray-100">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              <button
+                onClick={() => {
+                  setCurrentMonth(new Date());
+                  setSelectedDate(new Date());
+                }}
+                className="px-2 py-0.5 rounded-md text-[11px] font-medium text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
               >
-                {/* Day Number and Today Indicator */}
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-xs font-semibold flex items-center justify-center rounded-full w-5 h-5 ${
-                      isCurrentDay
-                        ? 'bg-black text-white dark:bg-white dark:text-black font-bold'
-                        : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    {format(day, 'd')}
-                  </span>
+                Today
+              </button>
+            </div>
 
-                  {hasEntries && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  )}
-                </div>
+            <div className="flex items-center space-x-1">
+              <button
+                onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+                className="p-1 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-600 dark:text-gray-300 transition"
+                title="Previous month"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <button
+                onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+                className="p-1 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-600 dark:text-gray-300 transition"
+                title="Next month"
+              >
+                <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
 
-                {/* Day Metadata (Mood, Words, Tags) */}
-                {hasEntries ? (
-                  <div className="mt-1 space-y-1">
-                    <div className="flex items-center justify-between">
-                      {mood && (
+          {/* Days of Week Header (M T W T F S S) */}
+          <div className="grid grid-cols-7 gap-1.5 text-center text-[11px] font-semibold text-gray-400 dark:text-gray-500">
+            <div>M</div>
+            <div>T</div>
+            <div>W</div>
+            <div>T</div>
+            <div>F</div>
+            <div>S</div>
+            <div>S</div>
+          </div>
+
+          {/* Calendar Day Grid */}
+          <div className="grid grid-cols-7 gap-1.5">
+            {days.map((day) => {
+              const dateKey = format(day, 'yyyy-MM-dd');
+              const dayEntries = entriesByDate.get(dateKey) || [];
+              const hasEntries = dayEntries.length > 0;
+              const isSelected = isSameDay(day, selectedDate);
+              const isCurrentMonth = isSameMonth(day, currentMonth);
+              const isCurrentDay = isToday(day);
+
+              // Primary mood and word count
+              const primaryEntry = dayEntries[0];
+              const mood = primaryEntry?.mood;
+              const totalWords = dayEntries.reduce((acc, curr) => {
+                const words = curr.content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+                return acc + words;
+              }, 0);
+
+              return (
+                <div
+                  key={dateKey}
+                  onClick={() => setSelectedDate(day)}
+                  className={`relative h-[64px] sm:h-[72px] p-1.5 rounded-xl border transition-all duration-150 cursor-pointer flex flex-col justify-between select-none ${
+                    !isCurrentMonth
+                      ? 'opacity-25 border-transparent hover:border-gray-200/60 dark:hover:border-gray-800'
+                      : isSelected
+                      ? 'border-neutral-900 dark:border-neutral-100 bg-neutral-900/[0.04] dark:bg-white/[0.07] ring-2 ring-neutral-900/15 dark:ring-white/25 shadow-sm scale-[1.02] z-10'
+                      : hasEntries
+                      ? 'border-gray-200/80 dark:border-gray-800 hover:border-gray-400 dark:hover:border-gray-600 bg-white dark:bg-neutral-900/90'
+                      : 'border-gray-100/90 dark:border-gray-850 hover:bg-gray-50 dark:hover:bg-neutral-850/60'
+                  }`}
+                >
+                  {/* Top Row: Day Number and Entry Indicator */}
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`text-[11px] font-semibold flex items-center justify-center rounded-full transition-all ${
+                        isSelected
+                          ? 'w-5 h-5 bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 font-bold shadow-xs'
+                          : isCurrentDay
+                          ? 'w-5 h-5 bg-neutral-200 dark:bg-neutral-700 text-neutral-900 dark:text-white font-bold ring-1 ring-neutral-400 dark:ring-neutral-500'
+                          : 'text-gray-700 dark:text-gray-300 px-0.5'
+                      }`}
+                    >
+                      {format(day, 'd')}
+                    </span>
+
+                    {hasEntries && (
+                      <span className="flex items-center gap-0.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-emerald-500 ring-2 ring-emerald-300 dark:ring-emerald-700' : 'bg-emerald-500'}`} />
+                        {dayEntries.length > 1 && (
+                          <span className="text-[9px] font-mono text-gray-400 dark:text-gray-500 leading-none">
+                            {dayEntries.length}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Day Metadata (Mood badge & Word count) */}
+                  {hasEntries ? (
+                    <div className="flex items-center justify-between text-[10px] gap-1 overflow-hidden">
+                      {mood ? (
                         <span
-                          className={`text-[11px] px-1.5 py-0.2 rounded-md border font-medium flex items-center ${
+                          className={`text-[10px] px-1 py-0.2 rounded border font-medium flex items-center truncate max-w-[65px] ${
                             MOOD_COLORS[mood] || 'bg-gray-100 text-gray-800'
                           }`}
                           title={`Mood: ${mood}`}
                         >
                           <span className="mr-0.5">{MOOD_EMOJIS[mood] || '📝'}</span>
-                          <span className="capitalize text-[10px] hidden sm:inline">{mood}</span>
+                          <span className="capitalize text-[9px] hidden sm:inline truncate">{mood}</span>
                         </span>
+                      ) : (
+                        <span />
                       )}
 
-                      <span className="text-[10px] text-gray-400 font-mono">
+                      <span className="text-[9px] text-gray-400 font-mono flex-shrink-0">
                         {totalWords}w
                       </span>
                     </div>
-
-                    {/* Tag badge preview */}
-                    {primaryEntry?.tags && primaryEntry.tags.length > 0 && (
-                      <div className="hidden sm:flex items-center space-x-1 text-[9px] text-gray-500 overflow-hidden">
-                        <Tag size={9} className="flex-shrink-0" />
-                        <span className="truncate">#{primaryEntry.tags[0]}</span>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="text-[10px] text-gray-300 dark:text-gray-700"></div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Selected Day Timeline Details */}
-      <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-6 space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-lg bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs">
-              {format(selectedDate, 'dd')}
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                Timeline for {format(selectedDate, 'MMMM d, yyyy')}
-              </h3>
-              <p className="text-[11px] text-gray-500">
-                {selectedDayEntries.length === 1
-                  ? '1 entry documented'
-                  : `${selectedDayEntries.length} entries documented`}
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={() => navigate('/entry/new')}
-            className="inline-flex items-center px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-xs font-medium transition"
-          >
-            <Plus size={13} className="mr-1" />
-            Write on this day
-          </button>
-        </div>
-
-        {/* Entries Stream for selected date */}
-        {selectedDayEntries.length === 0 ? (
-          <div className="p-8 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
-            <BookOpen size={28} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
-            <p className="text-xs text-gray-500 dark:text-gray-400">No journal entry recorded for this day.</p>
-            <button
-              onClick={() => navigate('/entry/new')}
-              className="mt-3 inline-flex items-center text-xs font-semibold text-black dark:text-white hover:underline"
-            >
-              Start writing now <ArrowRight size={12} className="ml-1" />
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {selectedDayEntries.map((entry) => {
-              const plainText = entry.content.replace(/<[^>]*>/g, ' ').slice(0, 180);
-              const wordCount = entry.content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
-
-              return (
-                <div
-                  key={entry.id}
-                  onClick={() => navigate(`/entry/${entry.id}`)}
-                  className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white bg-gray-50/50 dark:bg-neutral-850/50 cursor-pointer transition flex items-start justify-between gap-4 group"
-                >
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {entry.title || 'Untitled Entry'}
-                      </h4>
-                      {entry.mood && (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white dark:bg-neutral-800 border border-gray-200 dark:border-gray-700 flex items-center">
-                          <span className="mr-1">{MOOD_EMOJIS[entry.mood] || '📝'}</span>
-                          <span className="capitalize">{entry.mood}</span>
-                        </span>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
-                      {plainText}
-                    </p>
-
-                    <div className="flex items-center space-x-3 text-[11px] text-gray-400 pt-1">
-                      <span className="flex items-center">
-                        <Clock size={11} className="mr-1" /> {format(new Date(entry.created_at), 'h:mm a')}
-                      </span>
-                      <span>• {wordCount} words</span>
-                      {entry.tags && entry.tags.length > 0 && (
-                        <span className="flex items-center space-x-1">
-                          <Tag size={11} className="mr-0.5" />
-                          {entry.tags.map((t) => (
-                            <span key={t}>#{t}</span>
-                          ))}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="p-2 text-gray-400 group-hover:text-black dark:group-hover:text-white transition">
-                    <ArrowRight size={16} />
-                  </div>
+                  ) : (
+                    <div className="h-2"></div>
+                  )}
                 </div>
               );
             })}
           </div>
-        )}
+        </div>
+
+        {/* Selected Day Timeline Details (Right Column on PC) */}
+        <div className="lg:col-span-5 xl:col-span-4 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-sm p-4 sm:p-6 space-y-4 lg:sticky lg:top-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 rounded-lg bg-black dark:bg-white text-white dark:text-black flex items-center justify-center font-bold text-xs">
+                {format(selectedDate, 'dd')}
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                  Timeline for {format(selectedDate, 'MMMM d, yyyy')}
+                </h3>
+                <p className="text-[11px] text-gray-500">
+                  {selectedDayEntries.length === 1
+                    ? '1 entry documented'
+                    : `${selectedDayEntries.length} entries documented`}
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => navigate('/entry/new')}
+              className="inline-flex items-center px-2.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-neutral-800 text-xs font-medium transition"
+            >
+              <Plus size={13} className="mr-1" />
+              Write
+            </button>
+          </div>
+
+          {/* Entries Stream for selected date */}
+          {selectedDayEntries.length === 0 ? (
+            <div className="p-8 text-center border border-dashed border-gray-200 dark:border-gray-800 rounded-xl">
+              <BookOpen size={28} className="mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+              <p className="text-xs text-gray-500 dark:text-gray-400">No journal entry recorded for this day.</p>
+              <button
+                onClick={() => navigate('/entry/new')}
+                className="mt-3 inline-flex items-center text-xs font-semibold text-black dark:text-white hover:underline"
+              >
+                Start writing now <ArrowRight size={12} className="ml-1" />
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3 max-h-[calc(100vh-280px)] overflow-y-auto pr-1">
+              {selectedDayEntries.map((entry) => {
+                const plainText = entry.content.replace(/<[^>]*>/g, ' ').slice(0, 180);
+                const wordCount = entry.content.replace(/<[^>]*>/g, ' ').trim().split(/\s+/).filter(Boolean).length;
+
+                return (
+                  <div
+                    key={entry.id}
+                    onClick={() => navigate(`/entry/${entry.id}`)}
+                    className="p-4 rounded-xl border border-gray-200 dark:border-gray-800 hover:border-black dark:hover:border-white bg-gray-50/50 dark:bg-neutral-850/50 cursor-pointer transition flex items-start justify-between gap-4 group"
+                  >
+                    <div className="space-y-1.5 flex-1">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                          {entry.title || 'Untitled Entry'}
+                        </h4>
+                        {entry.mood && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-white dark:bg-neutral-800 border border-gray-200 dark:border-gray-700 flex items-center">
+                            <span className="mr-1">{MOOD_EMOJIS[entry.mood] || '📝'}</span>
+                            <span className="capitalize">{entry.mood}</span>
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                        {plainText}
+                      </p>
+
+                      <div className="flex items-center space-x-3 text-[11px] text-gray-400 pt-1">
+                        <span className="flex items-center">
+                          <Clock size={11} className="mr-1" /> {format(new Date(entry.created_at), 'h:mm a')}
+                        </span>
+                        <span>• {wordCount} words</span>
+                        {entry.tags && entry.tags.length > 0 && (
+                          <span className="flex items-center space-x-1">
+                            <Tag size={11} className="mr-0.5" />
+                            {entry.tags.map((t) => (
+                              <span key={t}>#{t}</span>
+                            ))}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="p-2 text-gray-400 group-hover:text-black dark:group-hover:text-white transition">
+                      <ArrowRight size={16} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
