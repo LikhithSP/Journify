@@ -12,7 +12,12 @@ import {
   Calendar,
   ShieldCheck,
   User,
-  FolderPlus
+  FolderPlus,
+  Star,
+  Zap,
+  X,
+  ChevronDown,
+  Sparkles
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -40,6 +45,11 @@ export default function Layout() {
   const [newFolderName, setNewFolderName] = useState('');
   // Drag and drop state for journal id
   const [draggedJournalId, setDraggedJournalId] = useState<string | null>(null);
+  // Pro Upgrade banner state
+  const [proBannerDismissed, setProBannerDismissed] = useState<boolean>(() => {
+    return localStorage.getItem('journify_dismiss_pro_card') === 'true';
+  });
+  const isUserPro = localStorage.getItem('journify_user_pro') === 'true';
 
   // Global search modal state
   const [searchOpen, setSearchOpen] = useState(false);
@@ -283,13 +293,23 @@ export default function Layout() {
                   </button>
                 </div>
 
-                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/journals') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
+                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/journals') && !location.search.includes('favorites') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
                   <BookMarked size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
                   <button 
                     onClick={() => navigate('/journals')}
                     className="flex-1 text-left"
                   >
                     All Journals
+                  </button>
+                </div>
+
+                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${location.pathname === '/journals' && location.search.includes('tab=favorites') ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-200 font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
+                  <Star size={15} className={`mr-2 ${location.search.includes('tab=favorites') ? 'text-amber-500 fill-amber-500' : 'text-gray-500 group-hover:text-amber-500'}`} />
+                  <button 
+                    onClick={() => navigate('/journals?tab=favorites')}
+                    className="flex-1 text-left"
+                  >
+                    Favorites
                   </button>
                 </div>
 
@@ -370,9 +390,68 @@ export default function Layout() {
               </nav>
               
               {/* Footer */}
-              <div className="p-3 border-t border-gray-200 dark:border-gray-800 mt-auto">
+              <div className="p-3 border-t border-gray-200 dark:border-gray-800 mt-auto space-y-2.5">
+                {/* Upgrade to PRO Badge / Card (Take inspiration from attached mockup) */}
+                {!isUserPro && !proBannerDismissed && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    className="relative overflow-hidden rounded-2xl p-3.5 text-white shadow-md bg-gradient-to-br from-[#8d5b74] via-[#7c4e78] to-[#60447c] dark:from-[#543048] dark:via-[#472c50] dark:to-[#36254a] border border-[#a8748d]/40 dark:border-white/15"
+                  >
+                    {/* Top Row: Icon, Title, Discount Pill & Close Button */}
+                    <div className="flex items-start justify-between gap-1 mb-1.5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Zap size={14} className="text-amber-300 fill-amber-300" />
+                        <span className="font-bold text-xs tracking-tight text-white">Upgrade to PRO</span>
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-white/20 text-white uppercase tracking-wider backdrop-blur-xs border border-white/20">
+                          20% OFF
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setProBannerDismissed(true);
+                          localStorage.setItem('journify_dismiss_pro_card', 'true');
+                        }}
+                        className="text-white/70 hover:text-white p-0.5 rounded transition"
+                        title="Dismiss"
+                      >
+                        <X size={13} />
+                      </button>
+                    </div>
+
+                    {/* Subtext description */}
+                    <p className="text-[11px] text-white/90 leading-snug mb-3 font-normal">
+                      Advanced reports, unlimited cloud storage and 30-day data retention.
+                    </p>
+
+                    {/* Dotted Divider line */}
+                    <div className="border-b border-dotted border-white/25 my-2.5" />
+
+                    {/* Price and Upgrade Now Button */}
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-baseline gap-0.5">
+                        <span className="text-lg font-extrabold font-mono text-white">$5</span>
+                        <span className="text-[11px] text-white/75">/month</span>
+                      </div>
+                      <ChevronDown size={14} className="text-white/75" />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => navigate('/upgrade')}
+                      className="w-full py-1.5 px-3 rounded-xl bg-white/20 hover:bg-white/30 active:scale-[0.98] text-white text-xs font-semibold backdrop-blur-md transition-all shadow-xs border border-white/25 flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <span>Upgrade now</span>
+                    </button>
+                  </motion.div>
+                )}
+
+                {/* Profile Button */}
                 <button
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-[rgb(44,44,44)] hover:bg-gray-200 dark:hover:bg-[rgb(60,60,60)] mb-3 transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-[rgb(44,44,44)] hover:bg-gray-200 dark:hover:bg-[rgb(60,60,60)] transition-colors border border-gray-200/50 dark:border-neutral-700/50"
                   onClick={() => navigate('/profile')}
                 >
                   <img
@@ -380,16 +459,25 @@ export default function Layout() {
                     alt="Profile"
                     className="w-7 h-7 rounded-full object-cover border"
                   />
-                  <div className="flex flex-col items-start">
-                    <span className="font-semibold">{profile?.name || user?.email?.split('@')[0] || 'Profile'}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">Profile</span>
+                  <div className="flex flex-col items-start flex-1 min-w-0">
+                    <span className="font-semibold text-xs truncate w-full text-left">
+                      {profile?.name || user?.email?.split('@')[0] || 'Profile'}
+                    </span>
+                    <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate w-full text-left">
+                      {user?.email || 'profile'}
+                    </span>
                   </div>
+                  {isUserPro && (
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      PRO
+                    </span>
+                  )}
                 </button>
                 <button 
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
                   onClick={handleLogout}
                 >
-                  <LogOut size={16} />
+                  <LogOut size={14} />
                   Log Out
                 </button>
               </div>

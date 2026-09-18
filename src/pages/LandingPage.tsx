@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Mic, Calendar, Shield, Zap,
   ArrowRight, Check, ChevronDown, Moon, Sun, Sparkles, Lock,
-  Bookmark, Award, Star
+  Bookmark, Award, Star, Quote, Layers, ArrowUpRight
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -51,56 +51,103 @@ const FEATURES = [
 
 const TESTIMONIALS = [
   {
-    quote: "A journal shouldn't feel like another corporate task board. Journify gives writing the reverence and quiet elegance of a classical leather notebook.",
-    name: "Dr. Elena Rostova",
-    role: "Philosopher & Essayist",
+    id: 't-1',
+    quote: "I used to lose my best ideas while walking my dog or driving to work. Now I just tap the red voice button, talk naturally, and Journify formats it into clean notes with mood tags before I even get home.",
+    name: "Marcus Vance",
+    role: "Product Designer & Daily Journaler",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&auto=format&fit=crop&q=80",
+    tag: "Voice Journaling",
+    date: "Sep 14, 2026",
+    mood: "😊",
+    words: 420,
     rating: 5,
   },
   {
-    quote: "The voice capture and instant transcription turns my fragmented morning commute thoughts into coherent journal passages. Truly unmatched.",
-    name: "Julian Chen",
-    role: "Founding Architect",
+    id: 't-2',
+    quote: "The 3x3 tables, clean Markdown shortcuts, and image attachments give me a real digital sketchbook feel. It replaced Apple Notes and Day One for me completely.",
+    name: "Aaliyah Chen",
+    role: "Freelance Illustrator",
+    avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=120&auto=format&fit=crop&q=80",
+    tag: "Rich Formatting",
+    date: "Sep 16, 2026",
+    mood: "😌",
+    words: 310,
     rating: 5,
   },
   {
-    quote: "Knowing my data never leaves my offline-encrypted enclave without my explicit consent gave me the confidence to write honestly again.",
-    name: "Sarah Jenkins",
-    role: "Novelist & Biographer",
+    id: 't-3',
+    quote: "Knowing all my entries are encrypted locally on my laptop first via IndexedDB with zero tracking telemetry is what made me comfortable writing raw, honest thoughts again.",
+    name: "Devon Brooks",
+    role: "Software Engineer",
+    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80",
+    tag: "Vault Privacy",
+    date: "Sep 17, 2026",
+    mood: "💡",
+    words: 580,
+    rating: 5,
+  },
+  {
+    id: 't-4',
+    quote: "The calendar heatmap and streak tracker keep me consistent without guilt. Seeing 45 consecutive days logged makes me feel so proud of my self-reflection habit.",
+    name: "Maya Lindqvist",
+    role: "Clinical Psychologist",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=120&auto=format&fit=crop&q=80",
+    tag: "Streak Rituals",
+    date: "Sep 18, 2026",
+    mood: "🔥",
+    words: 290,
+    rating: 5,
+  },
+  {
+    id: 't-5',
+    quote: "I wrote three long entries on an 11-hour flight with zero Wi-Fi. The moment my phone landed and connected to airport 5G, everything synced to cloud storage without a hitch.",
+    name: "Liam O'Connor",
+    role: "Travel Writer",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80",
+    tag: "Offline First",
+    date: "Sep 18, 2026",
+    mood: "✨",
+    words: 512,
     rating: 5,
   },
 ];
 
 const PRICING = [
   {
-    name: 'Apprentice',
+    name: 'Free Sanctuary',
     price: '$0',
     period: 'free forever',
-    description: 'Everything essential to cultivate a daily mindful writing habit.',
+    description: 'A complete, private offline-first journaling sanctuary for daily reflection.',
     features: [
-      'Unlimited journal entries',
-      'Offline-first PWA synchronization',
-      'Basic voice journaling (5 min/day)',
-      'Calendar & streak rituals',
-      'End-to-end encrypted storage',
+      'Unlimited journal entries & local drafts',
+      'Distraction-free Markdown & 3x3 table editor',
+      'Speech-to-text voice journaling',
+      'Interactive Calendar & day streak tracking',
+      'Offline-first PWA with local IndexedDB encryption',
+      'Rich image attachments & tag organization',
+      'One-click JSON & Markdown privacy exports',
     ],
-    cta: 'Begin Journaling',
+    cta: 'Start Journaling Free',
     highlight: false,
+    badge: 'Core Free',
   },
   {
-    name: 'Master Craftsman',
-    price: '$8',
+    name: 'Journify Pro',
+    price: '$5',
     period: 'per month',
-    description: 'For thinkers, writers, and builders demanding boundless reflection.',
+    description: 'For writers, thinkers, and builders who want unlimited cloud power and advanced insights.',
     features: [
-      'Everything in Apprentice',
-      'Unlimited AI Voice Transcription',
-      'Deep psychological mood analytics',
-      'Nested folder hierarchies & tags',
-      'Full JSON & Markdown data export',
-      'Priority offline sync & recovery',
+      'Everything in Free Sanctuary',
+      'Unlimited encrypted cloud storage & sync',
+      'Advanced mood tracking & sentiment reports',
+      'Extended 30-day version history rollbacks',
+      'Priority bidirectional multi-device synchronization',
+      'Unlimited AI speech-to-prose transcriptions',
+      'VIP badge & early access to new features',
     ],
-    cta: 'Start Free 14-Day Trial',
+    cta: 'Upgrade to Pro ($5/mo)',
     highlight: true,
+    badge: '20% Off Annual',
   },
 ];
 
@@ -337,49 +384,121 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 4: TESTIMONIALS ── */}
-      <section id="testimonials" className="py-24 px-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/40">
+      {/* ── SECTION 4: TESTIMONIALS (Fan Spread Deck Design matching Recent Journals) ── */}
+      <section id="testimonials" className="py-24 px-4 sm:px-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/40 overflow-hidden">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
+          <div className="text-center mb-10">
             <span className="text-xs font-semibold uppercase tracking-widest text-[#0066ff]">
               Reflections
             </span>
             <h2 className="font-serif-headline text-3xl sm:text-5xl mt-2 text-neutral-900 dark:text-neutral-100 font-normal">
               Words from our writers.
             </h2>
+            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-2">
+              Hover to inspect any writer's reflection · Real experiences from everyday minds
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t, idx) => (
-              <motion.div
-                key={t.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
-                className="p-7 rounded-2xl bg-white dark:bg-[#18181a] border border-neutral-200/80 dark:border-neutral-800 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-center gap-1 text-amber-500 mb-4">
-                    {[...Array(t.rating)].map((_, i) => (
-                      <Star key={i} size={14} fill="currentColor" />
-                    ))}
+          {/* Interactive Fan Spread Deck */}
+          <div className="relative w-full h-[360px] sm:h-[380px] flex items-center justify-center select-none py-6">
+            {TESTIMONIALS.map((t, i) => {
+              const total = TESTIMONIALS.length;
+              const center = (total - 1) / 2;
+              const offset = i - center;
+              const baseRot = offset * 6.5;
+              const baseX = offset * 90;
+              const baseY = Math.abs(offset) * 10;
+              const baseZ = total - Math.abs(offset);
+
+              const isHovered = activeFaq === i; // reuse index or separate state
+              const isAnyHovered = activeFaq !== null;
+
+              return (
+                <motion.div
+                  key={t.id}
+                  onMouseEnter={() => setActiveFaq(i)}
+                  onMouseLeave={() => setActiveFaq(null)}
+                  className="absolute cursor-pointer"
+                  style={{
+                    transformOrigin: '50% 125%',
+                    zIndex: isHovered ? 40 : baseZ,
+                  }}
+                  animate={{
+                    rotate: isHovered ? 0 : isAnyHovered ? baseRot * 1.3 : baseRot,
+                    x: isHovered ? baseX * 1.05 : isAnyHovered ? baseX * 1.2 : baseX,
+                    y: isHovered ? -35 : isAnyHovered ? baseY + 6 : baseY,
+                    scale: isHovered ? 1.08 : isAnyHovered ? 0.95 : 1,
+                  }}
+                  transition={{
+                    type: 'spring',
+                    stiffness: 340,
+                    damping: 24,
+                  }}
+                >
+                  <div
+                    className={`w-[260px] sm:w-[290px] h-[260px] rounded-2xl p-5 flex flex-col justify-between
+                      bg-white dark:bg-[#1c1c1f]
+                      border transition-all duration-200
+                      ${isHovered 
+                        ? 'border-neutral-900/30 dark:border-neutral-400/50 shadow-2xl shadow-black/20 dark:shadow-black/70 ring-2 ring-black/5 dark:ring-white/15' 
+                        : 'border-neutral-200/90 dark:border-neutral-800 shadow-lg shadow-black/5 dark:shadow-black/35'
+                      }`}
+                  >
+                    {/* Top: Date, Mood & Stars */}
+                    <div>
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="text-[11px] font-semibold text-neutral-400 font-mono">
+                          {t.date}
+                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm">{t.mood}</span>
+                          <div className="flex text-amber-500">
+                            {[...Array(t.rating)].map((_, r) => (
+                              <Star key={r} size={10} fill="currentColor" />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Quote Body */}
+                      <p className="font-serif-headline text-xs sm:text-[13px] text-neutral-800 dark:text-neutral-200 leading-relaxed italic line-clamp-4 font-normal">
+                        "{t.quote}"
+                      </p>
+                    </div>
+
+                    {/* Bottom: Author, Role & Tag */}
+                    <div className="pt-3 border-t border-neutral-100 dark:border-neutral-800/80">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <img
+                            src={t.avatar}
+                            alt={t.name}
+                            className="w-7 h-7 rounded-full object-cover border border-neutral-200 dark:border-neutral-700 flex-shrink-0"
+                          />
+                          <div className="min-w-0">
+                            <div className="font-semibold text-xs text-neutral-900 dark:text-white truncate">
+                              {t.name}
+                            </div>
+                            <div className="text-[10px] text-neutral-400 truncate">
+                              {t.role}
+                            </div>
+                          </div>
+                        </div>
+
+                        <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 flex-shrink-0">
+                          #{t.tag}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <p className="font-serif-headline text-lg sm:text-xl text-neutral-800 dark:text-neutral-200 leading-snug italic mb-6">
-                    "{t.quote}"
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-800">
-                  <div className="font-semibold text-sm text-neutral-900 dark:text-neutral-100">{t.name}</div>
-                  <div className="text-xs text-neutral-400">{t.role}</div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      {/* ── SECTION 5: PRICING ── */}
+      {/* ── SECTION 5: PRICING (Updated with real project details: Free vs $5/mo Pro) ── */}
       <section id="pricing" className="py-24 px-6 max-w-5xl mx-auto">
         <div className="text-center mb-16">
           <span className="text-xs font-semibold uppercase tracking-widest text-neutral-400 dark:text-neutral-500">
@@ -388,47 +507,59 @@ export default function LandingPage() {
           <h2 className="font-serif-headline text-3xl sm:text-5xl mt-2 text-neutral-900 dark:text-neutral-100 font-normal">
             Transparent, uncompromised value.
           </h2>
-          <p className="text-sm text-neutral-500 mt-2">No dark patterns. Cancel or export your entire archive anytime.</p>
+          <p className="text-sm text-neutral-500 mt-2">Zero hidden fees. Full data sovereignty. Cancel or export your entire archive anytime.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-3xl mx-auto">
           {PRICING.map((plan) => (
             <div
               key={plan.name}
-              className={`p-8 rounded-2xl border transition-all ${
+              className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                 plan.highlight
-                  ? 'border-[#0066ff] ring-1 ring-[#0066ff]/20 bg-white dark:bg-[#18181a] shadow-xl shadow-[#0066ff]/5'
+                  ? 'border-purple-500/80 ring-1 ring-purple-500/20 bg-gradient-to-b from-purple-500/5 via-white to-white dark:from-purple-950/20 dark:via-[#18181a] dark:to-[#18181a] shadow-xl shadow-purple-500/5'
                   : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#18181a]'
               }`}
             >
-              {plan.highlight && (
-                <span className="inline-block px-3 py-1 rounded-full text-[11px] font-semibold bg-[#0066ff]/10 text-[#0066ff] uppercase tracking-wider mb-4">
-                  Most Chosen
-                </span>
-              )}
-              <h3 className="font-bold text-xl text-neutral-900 dark:text-neutral-100">{plan.name}</h3>
-              <p className="text-xs text-neutral-500 mt-1 mb-6">{plan.description}</p>
-              
-              <div className="flex items-baseline gap-1.5 mb-6">
-                <span className="text-4xl font-bold font-serif-headline text-neutral-900 dark:text-neutral-100">{plan.price}</span>
-                <span className="text-xs text-neutral-400">{plan.period}</span>
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                    plan.highlight
+                      ? 'bg-purple-600 text-white shadow-xs'
+                      : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                  }`}>
+                    {plan.badge}
+                  </span>
+                  {plan.highlight && (
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                      $4/mo billed annually
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="font-bold text-xl text-neutral-900 dark:text-neutral-100">{plan.name}</h3>
+                <p className="text-xs text-neutral-500 mt-1 mb-6 leading-relaxed">{plan.description}</p>
+                
+                <div className="flex items-baseline gap-1.5 mb-6 py-2 border-y border-neutral-100 dark:border-neutral-800">
+                  <span className="text-4xl font-extrabold font-mono text-neutral-900 dark:text-neutral-100">{plan.price}</span>
+                  <span className="text-xs text-neutral-400">{plan.period}</span>
+                </div>
+
+                <ul className="space-y-3 mb-8 text-xs sm:text-sm">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-neutral-700 dark:text-neutral-300">
+                      <Check size={15} className={`flex-shrink-0 mt-0.5 ${plan.highlight ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-500'}`} />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
 
-              <ul className="space-y-3 mb-8 text-sm">
-                {plan.features.map((f) => (
-                  <li key={f} className="flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300">
-                    <Check size={14} className="text-[#0066ff] flex-shrink-0" />
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
               <Link
-                to="/register"
-                className={`block w-full py-3 rounded-full text-center text-sm font-medium transition-all ${
+                to={plan.highlight ? "/register" : "/register"}
+                className={`block w-full py-3 rounded-full text-center text-xs font-semibold transition-all ${
                   plan.highlight
-                    ? 'bg-[#0066ff] hover:bg-[#0052cc] text-white shadow-md shadow-[#0066ff]/25'
-                    : 'border border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white text-neutral-900 dark:text-neutral-100'
+                    ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/25'
+                    : 'border border-neutral-300 dark:border-neutral-700 hover:border-black dark:hover:border-white text-neutral-900 dark:text-neutral-100 hover:bg-neutral-50 dark:hover:bg-neutral-850'
                 }`}
               >
                 {plan.cta}

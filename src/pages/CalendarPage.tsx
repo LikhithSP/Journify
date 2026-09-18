@@ -135,7 +135,7 @@ export default function CalendarPage() {
             <span className="text-[11px] text-gray-400 animate-pulse">Syncing dates...</span>
           )}
           <div className="flex items-center px-2.5 py-1 rounded-lg bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-300 text-xs font-semibold">
-            <Flame size={14} className="mr-1 text-orange-500 fill-orange-500 animate-bounce" />
+            <Flame size={14} className="mr-1 text-orange-500 fill-orange-500" />
             <span>{currentStreak}-day streak</span>
           </div>
 
