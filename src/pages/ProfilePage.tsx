@@ -56,7 +56,7 @@ export function useProfileInfo(userId?: string) {
 export default function ProfilePage() {
   const { user, session, signOut, updatePassword, exportUserData, deleteAccount } = useAuth();
   const navigate = useNavigate();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams, _setSearchParams] = useSearchParams();
 
   const [profile, setProfile] = useState({
     name: '',

@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BookOpen, Mic, Calendar, Shield, Zap,
-  ArrowRight, Check, ChevronDown, Moon, Sun, Sparkles, Lock,
-  Bookmark, Award, Star, Quote, Layers, ArrowUpRight
+  ArrowRight, Check, ChevronDown, Moon, Sun, Sparkles, Lock, Star
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 

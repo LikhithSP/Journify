@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Check, 
   Sparkles, 
@@ -9,13 +9,7 @@ import {
   Lock, 
   ArrowLeft, 
   CheckCircle2, 
-  Zap, 
-  Cloud, 
-  Bot, 
-  FileText, 
-  HardDrive,
-  Star,
-  ChevronDown
+  Zap,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 

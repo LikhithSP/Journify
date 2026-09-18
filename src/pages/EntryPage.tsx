@@ -9,10 +9,8 @@ import {
   Star, 
   ChevronLeft, 
   ChevronRight, 
-  Image as ImageIcon,
   BookOpen,
   Tag,
-  Sparkles
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';

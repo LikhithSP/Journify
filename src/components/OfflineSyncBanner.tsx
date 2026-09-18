@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { SyncEngine } from '../services/syncEngine';
 import type { SyncState } from '../services/syncEngine';
-import { WifiOff, RefreshCw, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { WifiOff, RefreshCw, AlertTriangle } from 'lucide-react';
 
 export default function OfflineSyncBanner() {
   const [syncInfo, setSyncInfo] = useState<{

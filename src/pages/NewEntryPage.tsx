@@ -71,8 +71,8 @@ export default function NewEntryPage() {
   const [title, setTitle] = useState<string>(() => voiceState?.title || '');
   const [mood, setMood] = useState<'joyful' | 'peaceful' | 'sad' | 'angry' | 'anxious' | null>(() => voiceState?.mood || null);
   const [tags, setTags] = useState<string[]>(() => voiceState?.tags || []);
-  const [isFavorite, setIsFavorite] = useState<boolean>(false);
-  const [isPrivate, setIsPrivate] = useState<boolean>(true);
+  const [isFavorite, _setIsFavorite] = useState<boolean>(false);
+  const [isPrivate, _setIsPrivate] = useState<boolean>(true);
   const [tagInput, setTagInput] = useState<string>('');
   
   // Auto-save sync status: 'idle' | 'typing' | 'saving' | 'saved' | 'error'

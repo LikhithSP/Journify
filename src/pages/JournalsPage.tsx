@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format, isToday, isYesterday } from 'date-fns';
-import { BookOpen, Clock, Sparkles, Image as ImageIcon, ArrowUpRight, Search, X, Calendar } from 'lucide-react';
+import { BookOpen, Clock, Sparkles, ArrowUpRight, Search, X } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
 import { SyncEngine } from '../services/syncEngine';

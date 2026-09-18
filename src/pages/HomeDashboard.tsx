@@ -342,6 +342,7 @@ export default function HomeDashboard() {
   const streak = calcStreak(entries);
   const totalEntries = entries.length;
   const thisWeek = entries.filter((e) => differenceInDays(new Date(), new Date(e.created_at)) <= 7).length;
+  void thisWeek; // retained for potential future display
   const writtenToday = entries.some((e) => isToday(new Date(e.created_at)));
 
   // Sorted latest first
