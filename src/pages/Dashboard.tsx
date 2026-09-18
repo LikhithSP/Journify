@@ -1,9 +1,11 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
-  Plus, Tag, Search, X, Smile, ArchiveX, FilterX, Calendar as CalendarIcon, Mic
+  Plus, Search, X, Calendar as CalendarIcon, Mic,
+  LayoutGrid, List as ListIcon, ChevronDown, CheckCircle2,
+  Smile, Tag, FilterX, ArchiveX
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,13 +15,16 @@ import EmptyState from '../components/EmptyState';
 import NotionCard from '../components/NotionCard';
 import VoiceJournalModal from '../components/VoiceJournalModal';
 import { DraftService } from '../services/draftService';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+
+const PAGE_SIZE = 9; // Paginate entries in chunks of 9
 
 // Add prop to pass drag state setter to NotionCard
-export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId?: (id: string | null) => void } = {}) {
+export default function Dashboard({ setDraggedJournalId: propSetDraggedJournalId }: { setDraggedJournalId?: (id: string | null) => void } = {}) {
+  const outletCtx = useOutletContext<{ setDraggedJournalId?: (id: string | null) => void }>() || {};
+  const setDraggedJournalId = propSetDraggedJournalId || outletCtx.setDraggedJournalId;
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [filterMood, setFilterMood] = useState<string | null>(null);
@@ -28,8 +33,12 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [visibleCount, setVisibleCount] = useState<number>(PAGE_SIZE);
+  const [infiniteScrollEnabled, setInfiniteScrollEnabled] = useState<boolean>(true);
   const location = useLocation();
   const lastFetchRef = useRef(0);
+  const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     async function loadEntries() {
@@ -119,10 +128,43 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
     return filteredData;
   }, [allEntries, searchQuery, filterMood, filterTag]);
   
-  // Update entries whenever filters change
+  // Sliced paginated entries for high performance rendering
+  const paginatedEntries = useMemo(() => {
+    return filteredEntries.slice(0, visibleCount);
+  }, [filteredEntries, visibleCount]);
+
+  const hasMore = visibleCount < filteredEntries.length;
+
+  // Load next chunk
+  const handleLoadMore = useCallback(() => {
+    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredEntries.length));
+  }, [filteredEntries.length]);
+
+  // Reset pagination when search or filters change
   useEffect(() => {
-    setEntries(filteredEntries);
-  }, [filteredEntries]);
+    setVisibleCount(PAGE_SIZE);
+  }, [searchQuery, filterMood, filterTag]);
+
+  // IntersectionObserver for seamless Infinite Scrolling
+  useEffect(() => {
+    if (!infiniteScrollEnabled || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { root: null, rootMargin: '250px', threshold: 0.1 }
+    );
+
+    const target = loadMoreSentinelRef.current;
+    if (target) observer.observe(target);
+
+    return () => {
+      if (target) observer.unobserve(target);
+    };
+  }, [infiniteScrollEnabled, hasMore, handleLoadMore]);
 
   // Animation variants for list items
   const containerVariants = {
@@ -130,7 +172,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.05
+        staggerChildren: 0.04
       }
     }
   };
@@ -160,7 +202,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
     );
   }
 
-  if (!loading && entries.length === 0) {
+  if (!loading && allEntries.length === 0) {
     return (
       <EmptyState 
         title="Your journal is empty"
@@ -178,6 +220,34 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
         <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
         <div className="flex items-center space-x-3 flex-wrap gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center bg-gray-100 dark:bg-neutral-800 rounded-md p-0.5 border border-gray-200 dark:border-gray-700">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded transition ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-neutral-700 text-black dark:text-white shadow-xs'
+                  : 'text-gray-500 hover:text-black dark:hover:text-white'
+              }`}
+              title="Grid View"
+            >
+              <LayoutGrid size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded transition ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-neutral-700 text-black dark:text-white shadow-xs'
+                  : 'text-gray-500 hover:text-black dark:hover:text-white'
+              }`}
+              title="List View"
+            >
+              <ListIcon size={14} />
+            </button>
+          </div>
+
           <button
             onClick={() => setVoiceModalOpen(true)}
             className="notion-button flex items-center bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60 px-3 py-1.5 rounded-md text-sm font-medium transition"
@@ -276,7 +346,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
         )}
       </div>
       {/* No results message */}
-      {entries.length === 0 && (filterMood || filterTag || searchQuery) && (
+      {filteredEntries.length === 0 && (filterMood || filterTag || searchQuery) && (
         <div className="flex flex-col items-center justify-center py-16 text-center dark:bg-[rgb(23,23,23)]">
           <div className="text-gray-300 dark:text-gray-600 mb-6">
             <ArchiveX size={40} />
@@ -297,20 +367,67 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
           </button>
         </div>
       )}
-      {/* Journal Entries List */}
-      {entries.length > 0 && (
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 dark:bg-[rgb(23,23,23)]"
-        >
-          {entries.map((entry) => (
-            <motion.div key={entry.id} variants={itemVariants}>
-              <NotionCard entry={entry} viewType="grid" draggable onDragStart={() => setDraggedJournalId && setDraggedJournalId(entry.id)} onDragEnd={() => setDraggedJournalId && setDraggedJournalId(null)} />
-            </motion.div>
-          ))}
-        </motion.div>
+      {/* Journal Entries List (Paginated & Infinite Scrolling) */}
+      {paginatedEntries.length > 0 && (
+        <div className="space-y-6">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className={
+              viewMode === 'grid'
+                ? 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 dark:bg-[rgb(23,23,23)]'
+                : 'flex flex-col space-y-3 dark:bg-[rgb(23,23,23)]'
+            }
+          >
+            {paginatedEntries.map((entry) => (
+              <motion.div key={entry.id} variants={itemVariants}>
+                <NotionCard
+                  entry={entry}
+                  viewType={viewMode}
+                  draggable
+                  onDragStart={() => setDraggedJournalId && setDraggedJournalId(entry.id)}
+                  onDragEnd={() => setDraggedJournalId && setDraggedJournalId(null)}
+                />
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Pagination & Infinite Scrolling Sentinel */}
+          <div className="py-6 flex flex-col items-center justify-center space-y-3">
+            {hasMore ? (
+              <>
+                <div ref={loadMoreSentinelRef} className="h-4 w-full" />
+                <button
+                  type="button"
+                  onClick={handleLoadMore}
+                  className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-700 text-xs font-semibold text-gray-800 dark:text-gray-200 transition shadow-xs"
+                >
+                  <span>Load more entries</span>
+                  <ChevronDown size={14} />
+                </button>
+                <div className="flex items-center space-x-2 text-[11px] text-gray-400">
+                  <span>Showing {paginatedEntries.length} of {filteredEntries.length} entries</span>
+                  <span>•</span>
+                  <label className="inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={infiniteScrollEnabled}
+                      onChange={(e) => setInfiniteScrollEnabled(e.target.checked)}
+                      className="h-3 w-3 rounded text-black dark:text-white mr-1"
+                    />
+                    <span>Auto-scroll</span>
+                  </label>
+                </div>
+              </>
+            ) : filteredEntries.length > PAGE_SIZE ? (
+              <div className="flex items-center space-x-1.5 text-xs text-gray-400 py-4">
+                <CheckCircle2 size={14} className="text-emerald-500" />
+                <span>All {filteredEntries.length} entries loaded</span>
+              </div>
+            ) : null}
+          </div>
+        </div>
       )}
 
       {/* Voice Journaling Modal */}

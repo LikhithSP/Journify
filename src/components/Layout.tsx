@@ -17,10 +17,9 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
-import { useProfileInfo } from '../pages/ProfilePage';
+import { useProfileInfo } from '../hooks/useProfileInfo';
 import { supabase } from '../lib/supabase';
 import { OfflineDB } from '../services/offlineDB';
-import Dashboard from '../pages/Dashboard';
 import OfflineSyncBanner from './OfflineSyncBanner';
 import GlobalSearchModal from './GlobalSearchModal';
 import InAppNotificationToast from './InAppNotificationToast';
@@ -335,7 +334,7 @@ export default function Layout() {
       {/* Main Content */}
       <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)]">
         <div className="px-4 py-6 md:px-10 md:py-8 lg:px-14 max-w-6xl mx-auto">
-          {location.pathname === '/' ? <Dashboard setDraggedJournalId={setDraggedJournalId} /> : <Outlet />}
+          <Outlet context={{ setDraggedJournalId }} />
         </div>
       </main>
 

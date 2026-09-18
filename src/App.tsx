@@ -1,22 +1,34 @@
 import type { Session } from '@supabase/supabase-js';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { AuthProvider } from './contexts/AuthContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
-import LoginPage from './pages/LoginPage.tsx';
-import RegisterPage from './pages/RegisterPage.tsx';
-import ResetPasswordPage from './pages/ResetPasswordPage.tsx';
-import Dashboard from './pages/Dashboard.tsx';
-import EntryPage from './pages/EntryPage.tsx';
-import NewEntryPage from './pages/NewEntryPage.tsx';
-import EditEntryPage from './pages/EditEntryPage.tsx';
 import Layout from './components/Layout.tsx';
 import { supabase } from './lib/supabase';
-import ProfilePage from './pages/ProfilePage.tsx';
-import CalendarPage from './pages/CalendarPage.tsx';
-import FolderDashboard from './pages/FolderDashboard';
-import PrivacyCenterPage from './pages/PrivacyCenterPage';
+
+// High-Performance Route-Level Code Splitting
+const LoginPage = lazy(() => import('./pages/LoginPage.tsx'));
+const RegisterPage = lazy(() => import('./pages/RegisterPage.tsx'));
+const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage.tsx'));
+const Dashboard = lazy(() => import('./pages/Dashboard.tsx'));
+const EntryPage = lazy(() => import('./pages/EntryPage.tsx'));
+const NewEntryPage = lazy(() => import('./pages/NewEntryPage.tsx'));
+const EditEntryPage = lazy(() => import('./pages/EditEntryPage.tsx'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.tsx'));
+const CalendarPage = lazy(() => import('./pages/CalendarPage.tsx'));
+const FolderDashboard = lazy(() => import('./pages/FolderDashboard'));
+const PrivacyCenterPage = lazy(() => import('./pages/PrivacyCenterPage'));
+
+// Sleek minimal page loader
+function PageLoadingFallback() {
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 space-y-4">
+      <div className="w-8 h-8 border-2 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
+      <span className="text-xs text-gray-400 font-medium">Loading view...</span>
+    </div>
+  );
+}
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -56,26 +68,28 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
-          <AnimatePresence mode="wait">
-            <Routes>
-              {/* Public & Authentication Routes */}
-              <Route path="/login" element={!session ? <LoginPage /> : <Navigate to="/" />} />
-              <Route path="/register" element={!session ? <RegisterPage /> : <Navigate to="/" />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
-              
-              {/* Protected Routes */}
-              <Route path="/" element={session ? <Layout /> : <Navigate to="/login" />}>
-                <Route index element={<Dashboard />} />
-                <Route path="/entry/new" element={<NewEntryPage />} />
-                <Route path="/entry/:id" element={<EntryPage />} />
-                <Route path="/entry/:id/edit" element={<EditEntryPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/profile" element={<ProfilePage />} />
-                <Route path="/privacy" element={<PrivacyCenterPage />} />
-                <Route path="/folder/:folderId" element={<FolderDashboard />} />
-              </Route>
-            </Routes>
-          </AnimatePresence>
+          <Suspense fallback={<PageLoadingFallback />}>
+            <AnimatePresence mode="wait">
+              <Routes>
+                {/* Public & Authentication Routes */}
+                <Route path="/login" element={!session ? <LoginPage /> : <Navigate to="/" />} />
+                <Route path="/register" element={!session ? <RegisterPage /> : <Navigate to="/" />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                
+                {/* Protected Routes */}
+                <Route path="/" element={session ? <Layout /> : <Navigate to="/login" />}>
+                  <Route index element={<Dashboard />} />
+                  <Route path="/entry/new" element={<NewEntryPage />} />
+                  <Route path="/entry/:id" element={<EntryPage />} />
+                  <Route path="/entry/:id/edit" element={<EditEntryPage />} />
+                  <Route path="/calendar" element={<CalendarPage />} />
+                  <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/privacy" element={<PrivacyCenterPage />} />
+                  <Route path="/folder/:folderId" element={<FolderDashboard />} />
+                </Route>
+              </Routes>
+            </AnimatePresence>
+          </Suspense>
         </Router>
       </AuthProvider>
     </ThemeProvider>

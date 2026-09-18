@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Star, Tag } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
+import OptimizedImage from './OptimizedImage';
 
 interface NotionCardProps {
   entry: JournalEntry;
@@ -37,25 +38,22 @@ export default function NotionCard({ entry, viewType, draggable, onDragStart, on
     return fallbackImages[Math.abs(hash) % fallbackImages.length];
   }
   
+  const coverUrl = entry.images && entry.images.length > 0 && entry.images[0] 
+    ? entry.images[0] 
+    : getDeterministicFallback(entry.id);
+
   return (
     <Link to={`/entry/${entry.id}`} className="block group" draggable={draggable} onDragStart={() => { if (onDragStart) onDragStart(); }} onDragEnd={() => { if (onDragEnd) onDragEnd(); }}>
       <div className={`notion-card rounded-xl overflow-hidden shadow-lg bg-gray-50 dark:bg-[rgb(44,44,44)] border border-gray-200 dark:border-gray-700 transition-transform hover:scale-[1.025] hover:shadow-xl duration-150 ${viewType === 'list' ? 'flex items-start' : ''}`}
         style={{ minHeight: viewType === 'grid' ? 220 : undefined }}
       >
-        {/* Image placeholder or cover */}
-        {entry.images && entry.images.length > 0 && entry.images[0] ? (
-          <img
-            src={entry.images[0]}
-            alt="Journal cover"
-            className="w-full h-32 object-cover object-center border-b border-gray-200 dark:border-gray-700 bg-gray-200 dark:bg-gray-700"
-          />
-        ) : (
-          <img
-            src={getDeterministicFallback(entry.id)}
-            alt="Journal cover"
-            className="w-full h-32 object-cover object-center border-b border-gray-200 dark:border-gray-700 bg-gray-200 dark:bg-gray-700"
-          />
-        )}
+        {/* Lazy-loaded, skeleton-backed Optimized Cover */}
+        <OptimizedImage
+          src={coverUrl}
+          fallbackSrc={getDeterministicFallback(entry.id)}
+          alt={entry.title || 'Journal entry cover'}
+          className="w-full h-32 border-b border-gray-200 dark:border-gray-700"
+        />
         <div className="p-4 flex-1 flex flex-col">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center">

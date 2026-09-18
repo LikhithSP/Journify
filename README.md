@@ -158,6 +158,24 @@ Privacy is Journify's identity. Your thoughts belong entirely to you:
 
 ---
 
+### 9. ⚡ High-Performance Architecture & UX Optimizations
+- **Route-Level Code Splitting (`React.lazy` + `Suspense`)**:
+  - All sub-pages (`Dashboard`, `NewEntryPage`, `EditEntryPage`, `CalendarPage`, `ProfilePage`, `PrivacyCenterPage`, etc.) are lazily loaded on demand.
+  - Zero static coupling between shell layout and child pages, shrinking initial bundle size significantly.
+- **Optimized Lazy Image Pipeline (`OptimizedImage.tsx`)**:
+  - Native asynchronous decoding (`decoding="async"`) and viewport-driven lazy loading (`loading="lazy"`).
+  - Smooth blur-up transition with skeleton placeholders to eliminate Cumulative Layout Shift (CLS).
+  - Automated fallback handling for broken images or offline viewing.
+- **Dynamic Pagination & Infinite Scrolling**:
+  - Sliced pagination (`PAGE_SIZE = 9`) preventing DOM bloat on large journal libraries.
+  - Viewport detection using native `IntersectionObserver` with smooth sentinel loading and an optional auto-scroll toggle.
+  - Quick view switcher between Notion-style **Grid view** and compact **List view**.
+- **Two-Tier Caching & Optimistic Updates**:
+  - Memory & IndexedDB read-through cache serving instantaneous dashboard renders.
+  - Optimistic local updates in `SyncEngine` for instant writes with guaranteed background queue synchronization.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite, TailwindCSS
