@@ -11,6 +11,7 @@ import {
   Search,
   Calendar,
   ShieldCheck,
+  User,
   FolderPlus, 
   Folder 
 } from 'lucide-react';
@@ -23,6 +24,7 @@ import { OfflineDB } from '../services/offlineDB';
 import OfflineSyncBanner from './OfflineSyncBanner';
 import GlobalSearchModal from './GlobalSearchModal';
 import InAppNotificationToast from './InAppNotificationToast';
+import PWAInstallPrompt from './PWAInstallPrompt';
 import { NotificationService } from '../services/notificationService';
 import type { JournalEntry } from '../types/journal';
 
@@ -332,14 +334,67 @@ export default function Layout() {
         />
       )}
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)]">
+      <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)] pb-20 lg:pb-0">
         <div className="px-4 py-6 md:px-10 md:py-8 lg:px-14 max-w-6xl mx-auto">
           <Outlet context={{ setDraggedJournalId }} />
         </div>
       </main>
 
+      {/* Modern Mobile Bottom App Bar (Native PWA Feel) */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg border-t border-gray-200/80 dark:border-neutral-800 px-3 py-2 flex items-center justify-around shadow-lg">
+        <button
+          onClick={() => navigate('/')}
+          className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition ${
+            isActive('/') ? 'text-black dark:text-white font-semibold' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          }`}
+        >
+          <Home size={20} />
+          <span className="text-[10px] mt-0.5">Home</span>
+        </button>
+
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="flex flex-col items-center justify-center p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+        >
+          <Search size={20} />
+          <span className="text-[10px] mt-0.5">Search</span>
+        </button>
+
+        {/* Floating Center Write Action */}
+        <button
+          onClick={() => navigate('/entry/new')}
+          className="w-11 h-11 -mt-5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition"
+          aria-label="New Journal Entry"
+        >
+          <Plus size={22} strokeWidth={2.5} />
+        </button>
+
+        <button
+          onClick={() => navigate('/calendar')}
+          className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition ${
+            isActive('/calendar') ? 'text-black dark:text-white font-semibold' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          }`}
+        >
+          <Calendar size={20} />
+          <span className="text-[10px] mt-0.5">Calendar</span>
+        </button>
+
+        <button
+          onClick={() => navigate('/profile')}
+          className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition ${
+            isActive('/profile') ? 'text-black dark:text-white font-semibold' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          }`}
+        >
+          <User size={20} />
+          <span className="text-[10px] mt-0.5">Profile</span>
+        </button>
+      </nav>
+
       {/* Floating Offline / Background Sync Status Banner */}
       <OfflineSyncBanner />
+
+      {/* PWA Install Prompt Banner */}
+      <PWAInstallPrompt />
 
       {/* Global Command Palette & Search Modal */}
       <GlobalSearchModal

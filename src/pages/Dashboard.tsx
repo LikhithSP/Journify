@@ -296,33 +296,33 @@ export default function Dashboard({ setDraggedJournalId: propSetDraggedJournalId
             </button>
           )}
         </div>
-        {/* Mood filters */}
-        <div className="flex flex-wrap gap-2">
+        {/* Filter Pills row: horizontally scrollable on mobile */}
+        <div className="w-full flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+          {/* Mood filters */}
           {availableMoods.map((mood) => (
             <button
               key={mood}
               onClick={() => setFilterMood(filterMood === mood ? null : mood)}
-              className={`flex items-center px-3 py-1 text-xs rounded-full transition-colors ${
+              className={`flex-shrink-0 flex items-center px-3 py-1.5 text-xs rounded-full border transition-all ${
                 filterMood === mood 
-                  ? 'bg-gray-200 dark:bg-[rgb(23,23,23)] text-gray-800 dark:text-gray-100 font-medium' 
-                  : 'bg-gray-100 dark:bg-[rgb(23,23,23)] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[rgb(23,23,23)]'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-medium shadow-sm' 
+                  : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 border-transparent hover:border-gray-300 dark:hover:border-gray-700'
               }`}
             >
               <Smile className="h-3 w-3 mr-1.5" />
               {mood.charAt(0).toUpperCase() + mood.slice(1)}
             </button>
           ))}
-        </div>
-        {/* Tag filters */}
-        <div className="flex flex-wrap gap-2">
+
+          {/* Tag filters */}
           {availableTags.length > 0 && availableTags.map((tag) => (
             <button
               key={tag}
               onClick={() => setFilterTag(filterTag === tag ? null : tag)}
-              className={`flex items-center px-3 py-1 text-xs rounded-full transition-colors ${
+              className={`flex-shrink-0 flex items-center px-3 py-1.5 text-xs rounded-full border transition-all ${
                 filterTag === tag 
-                  ? 'bg-gray-200 dark:bg-[rgb(23,23,23)] text-gray-800 dark:text-gray-100 font-medium' 
-                  : 'bg-gray-100 dark:bg-[rgb(23,23,23)] text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-[rgb(23,23,23)]'
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-transparent font-medium shadow-sm' 
+                  : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-400 border-transparent hover:border-gray-300 dark:hover:border-gray-700'
               }`}
             >
               <Tag className="h-3 w-3 mr-1.5" />

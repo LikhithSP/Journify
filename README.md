@@ -176,6 +176,36 @@ Privacy is Journify's identity. Your thoughts belong entirely to you:
 
 ---
 
+### 10. 📱 Installable PWA & Native Mobile Experience
+Transform Journify into an installable native-like application on Android, iOS, Windows, and macOS:
+
+```
+Browser  ───►  Install Journify  ───►  PWA Shell  ───►  Offline Storage  ───►  Background Sync
+```
+
+- **PWA Web App Manifest (`manifest.json`)**:
+  - Standalone display mode (`"display": "standalone"`) removing browser address bars and chroming.
+  - Full icon set (`pwa-192x192.svg`, `pwa-512x512.svg`) with `maskable` support for adaptive Android icons.
+  - Quick App Shortcuts: Launch directly into **New Journal Entry**, **Calendar & Timeline**, or **Privacy Center**.
+  - Theme color `#000000` matching system dark mode status bar on mobile.
+- **Custom Native Install Prompt (`PWAInstallPrompt.tsx`)**:
+  - Listens to browser `beforeinstallprompt` event with friendly Notion-styled popover banner.
+  - Standalone mode detection (`display-mode: standalone` / `navigator.standalone`) preventing redundant prompts once installed.
+  - Post-installation success feedback and dismissal cooldowns (`localStorage`).
+- **Offline Shell & Background Sync (`public/sw.js`)**:
+  - Caches core app assets (`/`, `/index.html`, `/manifest.json`, icons) with Stale-While-Revalidate caching.
+  - Offline navigation fallback guaranteeing the app loads instantly even with no internet connection.
+  - Listens to background `sync` (`sync-entries`) events to trigger `SyncEngine.processQueue()` as soon as network returns.
+- **Web Push Notifications**:
+  - Service worker `push` event handling with rich notification payload options (`title`, `body`, `icon`, `badge`, vibration patterns).
+  - `notificationclick` handler allowing users to tap on notifications to open or focus the app window directly.
+- **Mobile-First Responsive Interface**:
+  - **Bottom Navigation Bar**: Fixed thumb-friendly navigation on mobile devices with quick access to **Home**, **Search (Cmd+K)**, **Floating Write (+)**, **Calendar**, and **Profile**.
+  - **Horizontal Touch Scrollbars**: Custom smooth horizontal scrolling for mood pills, tags, and rich text editor formatting tools on narrow viewports.
+  - **Safe Area Insets**: `viewport-fit=cover` and bottom padding protecting interactive controls from mobile device navigation bars.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite, TailwindCSS

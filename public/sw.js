@@ -1,9 +1,11 @@
-const CACHE_NAME = 'journify-pwa-v1';
+const CACHE_NAME = 'journify-pwa-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/journal.svg',
+  '/pwa-192x192.svg',
+  '/pwa-512x512.svg',
 ];
 
 // Install: Cache core application shell
@@ -89,4 +91,57 @@ self.addEventListener('sync', (event: any) => {
       })
     );
   }
+});
+
+// Push Notifications Event Handling
+self.addEventListener('push', (event: any) => {
+  let data = { title: 'Journify Reminder', body: "Time for today's reflection ✨", icon: '/pwa-192x192.svg' };
+  if (event.data) {
+    try {
+      data = event.data.json();
+    } catch (e) {
+      data.body = event.data.text();
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: data.icon || '/pwa-192x192.svg',
+    badge: '/journal.svg',
+    vibrate: [100, 50, 100],
+    data: {
+      url: '/',
+    },
+    actions: [
+      { action: 'open', title: 'Open Journify' },
+      { action: 'dismiss', title: 'Dismiss' }
+    ]
+  };
+
+  event.waitUntil(
+    (self as any).registration.showNotification(data.title, options)
+  );
+});
+
+// Notification Click action
+self.addEventListener('notificationclick', (event: any) => {
+  event.notification.close();
+
+  if (event.action === 'dismiss') {
+    return;
+  }
+
+  event.waitUntil(
+    (self as any).clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList: any[]) => {
+      // Focus existing window or open new
+      for (const client of clientList) {
+        if (client.url && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      if ((self as any).clients.openWindow) {
+        return (self as any).clients.openWindow('/');
+      }
+    })
+  );
 });

@@ -522,12 +522,12 @@ export default function NewEntryPage() {
           className="w-full text-3xl sm:text-4xl font-bold tracking-tight mb-6 bg-transparent border-0 focus:outline-none focus:ring-0 p-0 text-gray-900 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-700"
         />
 
-        {/* Notion-style Action Toolbar */}
+        {/* Notion-style Action Toolbar (Horizontally scrollable with touch momentum on mobile) */}
         {editor && (
-          <div className="flex flex-wrap items-center gap-1 pb-4 mb-6 border-b border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300">
+          <div className="flex items-center gap-1 pb-4 mb-6 border-b border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300 overflow-x-auto no-scrollbar py-1">
             <button
               onClick={() => editor.chain().focus().toggleBold().run()}
-              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+              className={`p-1.5 flex-shrink-0 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
                 editor.isActive('bold') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
               }`}
               title="Bold (Cmd+B)"

@@ -4,8 +4,8 @@ import './index.css'
 import App from './App.tsx'
 import { SyncEngine } from './services/syncEngine'
 
-// Register Service Worker for offline availability and background sync
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// Register Service Worker for offline availability, background sync, and push notifications
+if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')
