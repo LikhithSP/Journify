@@ -48,14 +48,6 @@ export interface Tag {
   color?: string;
 }
 
-export interface Folder {
-  id: string;
-  name: string;
-  user_id: string;
-  parent_id?: string | null;
-  color?: string | null;
-  created_at?: string;
-}
 
 export interface UserProfile {
   id: string;

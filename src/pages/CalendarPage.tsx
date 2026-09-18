@@ -116,7 +116,7 @@ export default function CalendarPage() {
   const selectedDayEntries = entriesByDate.get(selectedDateKey) || [];
 
   return (
-    <div className="max-w-7xl mx-auto py-2 px-1 sm:px-2 space-y-4">
+    <div className="max-w-7xl mx-auto py-2 px-1 sm:px-2 space-y-4 pt-14 lg:pt-2">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-100 dark:border-gray-800">
         <div>

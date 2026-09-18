@@ -218,7 +218,7 @@ export default function EntryPage() {
 
   if (error) {
     return (
-      <div className="max-w-4xl mx-auto py-8 px-4">
+      <div className="max-w-4xl mx-auto py-8 px-4 pt-14 lg:pt-8">
         <button 
           onClick={() => navigate('/')} 
           className="mb-6 flex items-center text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
@@ -248,7 +248,7 @@ export default function EntryPage() {
   const currentImage = extractedImages[spreadIndex % (extractedImages.length || 1)] || null;
 
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 pb-20 select-none">
+    <div className="max-w-6xl mx-auto px-2 sm:px-4 py-4 pb-20 select-none pt-14 lg:pt-4">
       
       {/* ── Top Bar Controls ── */}
       <div className="flex items-center justify-between gap-4 mb-5">

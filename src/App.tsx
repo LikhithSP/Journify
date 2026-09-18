@@ -19,7 +19,7 @@ const NewEntryPage = lazy(() => import('./pages/NewEntryPage.tsx'));
 const EditEntryPage = lazy(() => import('./pages/EditEntryPage.tsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.tsx'));
 const CalendarPage = lazy(() => import('./pages/CalendarPage.tsx'));
-const FolderDashboard = lazy(() => import('./pages/FolderDashboard'));
+
 const UpgradeProPage = lazy(() => import('./pages/UpgradeProPage.tsx'));
 
 // Sleek minimal page loader
@@ -93,7 +93,7 @@ function App() {
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="upgrade" element={<UpgradeProPage />} />
                   <Route path="privacy" element={<Navigate to="/profile?tab=data" replace />} />
-                  <Route path="folder/:folderId" element={<FolderDashboard />} />
+
                 </Route>
               </Routes>
             </AnimatePresence>

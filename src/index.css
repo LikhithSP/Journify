@@ -170,3 +170,12 @@
   background-color: rgba(234, 179, 8, 0.3);
   color: #fef08a;
 }
+
+/* Scrollbar hide utility for horizontal scroll carousels on mobile */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

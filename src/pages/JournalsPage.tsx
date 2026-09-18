@@ -287,7 +287,7 @@ export default function JournalsPage() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20 select-none">
+    <div className="max-w-6xl mx-auto space-y-6 pb-20 select-none pt-14 lg:pt-0">
       
       {/* ── Top Atmospheric Banner GIF (Clean Professional Fade) ── */}
       <motion.div

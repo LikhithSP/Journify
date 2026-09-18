@@ -10,14 +10,12 @@ import {
   Home, 
   Search,
   Calendar,
-  ShieldCheck,
-  User,
-  FolderPlus,
   Star,
   Zap,
   X,
   ChevronDown,
-  Sparkles
+  Settings,
+  User
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
@@ -29,7 +27,6 @@ import OfflineSyncBanner from './OfflineSyncBanner';
 import GlobalSearchModal from './GlobalSearchModal';
 import InAppNotificationToast from './InAppNotificationToast';
 import PWAInstallPrompt from './PWAInstallPrompt';
-import FolderTree from './FolderTree';
 import { NotificationService } from '../services/notificationService';
 import type { JournalEntry } from '../types/journal';
 
@@ -40,11 +37,6 @@ export default function Layout() {
   const { signOut, user } = useAuth();
   const profile = useProfileInfo(user?.id);
   const [sidebarOpen, setSidebarOpen] = useState(true);  
-  const [folders, setFolders] = useState<any[]>([]);
-  const [showFolderInput, setShowFolderInput] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
-  // Drag and drop state for journal id
-  const [draggedJournalId, setDraggedJournalId] = useState<string | null>(null);
   // Pro Upgrade banner state
   const [proBannerDismissed, setProBannerDismissed] = useState<boolean>(() => {
     return localStorage.getItem('journify_dismiss_pro_card') === 'true';
@@ -94,106 +86,6 @@ export default function Layout() {
   const availableTags = Array.from(new Set(searchEntries.flatMap((e) => e.tags || []))).sort();
   const availableMoods = Array.from(new Set(searchEntries.map((e) => e.mood).filter(Boolean))) as string[];
 
-  // Fetch folders from Supabase & IndexedDB
-  useEffect(() => {
-    async function fetchFolders() {
-      if (!user) return;
-      try {
-        const localFolders = await OfflineDB.getAllFolders(user.id);
-        if (localFolders.length > 0) setFolders(localFolders);
-
-        if (navigator.onLine) {
-          const { data } = await supabase
-            .from('folders')
-            .select('id, name, parent_id, color, created_at')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: true });
-          if (data) {
-            setFolders(data);
-            await OfflineDB.putFoldersBatch(data);
-          }
-        }
-      } catch (e) {
-        console.error('Error loading folders:', e);
-      }
-    }
-    fetchFolders();
-  }, [user]);
-
-  // Add folder or subfolder
-  const handleCreateFolder = async (name: string, parentId?: string | null) => {
-    if (!name.trim() || !user) return;
-    const tempId = `folder_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-    const folderPayload = {
-      id: tempId,
-      name: name.trim(),
-      user_id: user.id,
-      parent_id: parentId || null,
-      created_at: new Date().toISOString(),
-    };
-
-    // Optimistic local update
-    setFolders((prev) => [...prev, folderPayload]);
-    await OfflineDB.putFolder(folderPayload);
-
-    if (navigator.onLine) {
-      const { data, error } = await supabase
-        .from('folders')
-        .insert([{ 
-          name: name.trim(), 
-          user_id: user.id,
-          parent_id: parentId || null 
-        }])
-        .select('id, name, parent_id, color, created_at')
-        .single();
-      
-      if (!error && data) {
-        setFolders((prev) => prev.map((f) => (f.id === tempId ? data : f)));
-        await OfflineDB.deleteFolder(tempId);
-        await OfflineDB.putFolder(data);
-      }
-    }
-  };
-
-  // Delete folder and its nested subfolders
-  const handleDeleteFolder = async (folderId: string) => {
-    if (!user) return;
-
-    // Find all subfolder IDs recursively
-    const idsToDelete: string[] = [folderId];
-    const findChildren = (pid: string) => {
-      folders.filter((f) => f.parent_id === pid).forEach((child) => {
-        idsToDelete.push(child.id);
-        findChildren(child.id);
-      });
-    };
-    findChildren(folderId);
-
-    // Optimistic local removal
-    setFolders((prev) => prev.filter((f) => !idsToDelete.includes(f.id)));
-    for (const id of idsToDelete) {
-      await OfflineDB.deleteFolder(id);
-    }
-
-    if (navigator.onLine) {
-      await supabase
-        .from('folders')
-        .delete()
-        .in('id', idsToDelete)
-        .eq('user_id', user.id);
-    }
-
-    // If currently viewing the deleted folder, navigate back to home
-    if (location.pathname.includes(`/folder/${folderId}`)) {
-      navigate('/');
-    }
-  };
-
-  // Add folder click handler
-  const handleFolderClick = (folderId: string) => {
-    navigate(`/folder/${folderId}`);
-  };
-
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
@@ -203,8 +95,6 @@ export default function Layout() {
   const isActive = (path: string) => {
     return location.pathname === path;
   };
-
-  const isDashboard = location.pathname === '/home' || location.pathname === '/';
 
   return (
     <div className="flex h-screen w-screen bg-white dark:bg-[rgb(23,23,23)]">
@@ -271,7 +161,7 @@ export default function Layout() {
               </div>
               
               {/* Navigation */}
-              <nav className="flex-1 px-2 pb-4 space-y-1">
+              <nav className="flex-1 px-2 pb-4 space-y-1 overflow-y-auto">
                 <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300`}>
                   <Search size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
                   <button 
@@ -323,75 +213,21 @@ export default function Layout() {
                   </button>
                 </div>
 
-                {/* Hierarchical Folders & Subfolders Section */}
-                <div className="mt-4 px-2">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">Folders</span>
-                    <button
-                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition"
-                      onClick={() => setShowFolderInput((v) => !v)}
-                      title="Add Root Folder"
-                      type="button"
-                    >
-                      <FolderPlus size={15} />
-                    </button>
-                  </div>
-
-                  {showFolderInput && (
-                    <div className="flex items-center gap-1 mb-2">
-                      <input
-                        type="text"
-                        className="flex-1 px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 text-xs text-gray-800 dark:text-gray-100 border border-gray-200 dark:border-gray-700 focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
-                        placeholder="Folder name"
-                        value={newFolderName}
-                        onChange={(e) => setNewFolderName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            handleCreateFolder(newFolderName);
-                            setNewFolderName('');
-                            setShowFolderInput(false);
-                          }
-                          if (e.key === 'Escape') setShowFolderInput(false);
-                        }}
-                        autoFocus
-                      />
-                      <button
-                        className="px-2 py-1 rounded bg-black text-white dark:bg-white dark:text-black text-xs font-medium hover:opacity-90"
-                        onClick={() => {
-                          handleCreateFolder(newFolderName);
-                          setNewFolderName('');
-                          setShowFolderInput(false);
-                        }}
-                        type="button"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  )}
-
-                  <FolderTree
-                    folders={folders}
-                    activeFolderId={location.pathname.startsWith('/folder/') ? location.pathname.split('/folder/')[1] : null}
-                    onSelectFolder={handleFolderClick}
-                    onCreateFolder={handleCreateFolder}
-                    onDeleteFolder={handleDeleteFolder}
-                    onDropJournal={async (folderId) => {
-                      if (draggedJournalId && user) {
-                        await supabase
-                          .from('journal_entries')
-                          .update({ folder_id: folderId })
-                          .eq('id', draggedJournalId)
-                          .eq('user_id', user.id);
-                        setDraggedJournalId(null);
-                      }
-                    }}
-                  />
+                {/* New Entry shortcut */}
+                <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={() => navigate('/entry/new')}
+                    className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] transition-colors group"
+                  >
+                    <Plus size={15} className="text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
+                    New Entry
+                  </button>
                 </div>
               </nav>
               
               {/* Footer */}
               <div className="p-3 border-t border-gray-200 dark:border-gray-800 mt-auto space-y-2.5">
-                {/* Upgrade to PRO Badge / Card (Take inspiration from attached mockup) */}
+                {/* Upgrade to PRO Badge / Card */}
                 {!isUserPro && !proBannerDismissed && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
@@ -473,13 +309,25 @@ export default function Layout() {
                     </span>
                   )}
                 </button>
-                <button 
-                  className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
-                  onClick={handleLogout}
-                >
-                  <LogOut size={14} />
-                  Log Out
-                </button>
+
+                {/* Bottom action row: Settings + Logout */}
+                <div className="flex items-center gap-2">
+                  <button
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[rgb(44,44,44)] hover:text-gray-900 dark:hover:text-white transition-colors border border-gray-200 dark:border-neutral-700"
+                    onClick={() => navigate('/profile?tab=settings')}
+                    title="Settings"
+                  >
+                    <Settings size={13} />
+                    Settings
+                  </button>
+                  <button 
+                    className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-black text-white dark:bg-white dark:text-black hover:opacity-90 transition-opacity"
+                    onClick={handleLogout}
+                  >
+                    <LogOut size={13} />
+                    Log Out
+                  </button>
+                </div>
               </div>
             </div>
           </motion.aside>
@@ -493,59 +341,79 @@ export default function Layout() {
         />
       )}
       {/* Main Content */}
-      <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)] pb-20 lg:pb-0">
+      <main className="flex-1 overflow-auto bg-white dark:bg-[rgb(23,23,23)] pb-28 lg:pb-0">
         <div className="px-4 py-6 md:px-8 md:py-8 lg:px-10 max-w-7xl mx-auto">
-          <Outlet context={{ setDraggedJournalId }} />
+          <Outlet />
         </div>
       </main>
 
-      {/* Modern Mobile Bottom App Bar (Native PWA Feel) */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-lg border-t border-gray-200/80 dark:border-neutral-800 px-3 py-2 flex items-center justify-around shadow-lg">
+      {/* Apple-style Floating Pill Nav */}
+      <nav className="lg:hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-30 flex items-center gap-0.5 px-2.5 py-2 rounded-full
+        bg-white/90 dark:bg-neutral-900/90
+        backdrop-blur-2xl
+        border border-gray-200/70 dark:border-neutral-700/60
+        shadow-[0_4px_24px_rgba(0,0,0,0.10),0_1px_4px_rgba(0,0,0,0.06)] dark:shadow-[0_4px_24px_rgba(0,0,0,0.5)]">
+
+        {/* Home */}
         <button
           onClick={() => navigate('/home')}
-          className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition ${
-            isActive('/home') ? 'text-black dark:text-white font-semibold' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          className={`flex flex-col items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-200 ${
+            isActive('/home')
+              ? 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-gray-100'
+              : 'text-gray-400 dark:text-neutral-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-neutral-800/60'
           }`}
         >
-          <Home size={20} />
-          <span className="text-[10px] mt-0.5">Home</span>
+          <Home size={18} strokeWidth={isActive('/home') ? 2.2 : 1.8} />
+          <span className="text-[9px] mt-0.5 font-medium">{isActive('/home') ? 'Home' : 'Home'}</span>
         </button>
 
+        {/* Search */}
         <button
           onClick={() => setSearchOpen(true)}
-          className="flex flex-col items-center justify-center p-1.5 rounded-xl text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
+          className="flex flex-col items-center justify-center px-3.5 py-1.5 rounded-full text-gray-400 dark:text-neutral-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-neutral-800/60 transition-all duration-200"
         >
-          <Search size={20} />
-          <span className="text-[10px] mt-0.5">Search</span>
+          <Search size={18} strokeWidth={1.8} />
+          <span className="text-[9px] mt-0.5 font-medium">Search</span>
         </button>
 
-        {/* Floating Center Write Action */}
+        {/* Center compose — primary CTA, intentionally more prominent */}
         <button
           onClick={() => navigate('/entry/new')}
-          className="w-11 h-11 -mt-5 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition"
+          className="flex items-center justify-center w-10 h-10 mx-1.5 rounded-full
+            bg-neutral-900 dark:bg-neutral-100
+            text-white dark:text-neutral-900
+            shadow-md shadow-neutral-900/20 dark:shadow-neutral-100/10
+            hover:bg-neutral-700 dark:hover:bg-white
+            hover:scale-105 active:scale-95 transition-all duration-150"
           aria-label="New Journal Entry"
         >
-          <Plus size={22} strokeWidth={2.5} />
+          <Plus size={19} strokeWidth={2.3} />
         </button>
 
+        {/* Journals */}
         <button
           onClick={() => navigate('/journals')}
-          className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition ${
-            isActive('/journals') ? 'text-black dark:text-white font-semibold' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          className={`flex flex-col items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-200 ${
+            isActive('/journals')
+              ? 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-gray-100'
+              : 'text-gray-400 dark:text-neutral-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-neutral-800/60'
           }`}
         >
-          <BookMarked size={20} />
-          <span className="text-[10px] mt-0.5">Journals</span>
+          <BookMarked size={18} strokeWidth={isActive('/journals') ? 2.2 : 1.8} />
+          <span className="text-[9px] mt-0.5 font-medium">Journals</span>
         </button>
 
+        {/* Profile */}
         <button
           onClick={() => navigate('/profile')}
-          className={`flex flex-col items-center justify-center p-1.5 rounded-xl transition ${
-            isActive('/profile') ? 'text-black dark:text-white font-semibold' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-200'
+          className={`flex flex-col items-center justify-center px-3.5 py-1.5 rounded-full transition-all duration-200 ${
+            isActive('/profile')
+              ? 'bg-gray-100 dark:bg-neutral-800 text-gray-900 dark:text-gray-100'
+              : 'text-gray-400 dark:text-neutral-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100/60 dark:hover:bg-neutral-800/60'
           }`}
         >
-          <User size={20} />
-          <span className="text-[10px] mt-0.5">Profile</span>
+          <User size={18} strokeWidth={isActive('/profile') ? 2.2 : 1.8} />
+          <span className="text-[9px] mt-0.5 font-medium">Profile</span>
         </button>
       </nav>
 

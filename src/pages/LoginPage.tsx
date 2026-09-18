@@ -77,7 +77,7 @@ export default function LoginPage() {
       initial={{ opacity: 0 }} 
       animate={{ opacity: 1 }} 
       exit={{ opacity: 0 }}
-      className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#ffffff] dark:bg-[#111113] text-neutral-900 dark:text-neutral-100 relative overflow-hidden font-sans selection:bg-[#0066ff]/20"
+      className="min-h-screen flex items-start sm:items-center justify-center pt-20 sm:pt-6 lg:pt-8 pb-8 px-4 sm:px-6 lg:px-8 bg-[#ffffff] dark:bg-[#111113] text-neutral-900 dark:text-neutral-100 relative overflow-hidden font-sans selection:bg-[#0066ff]/20"
     >
       {/* Background Sacred Geometric Curves matching Landing Page */}
       <div className="absolute inset-0 pointer-events-none opacity-30 dark:opacity-10 flex items-center justify-center">
@@ -120,8 +120,8 @@ export default function LoginPage() {
       {/* Main Authentication Enclave Card */}
       <div className="w-full max-w-5xl z-10 grid grid-cols-1 lg:grid-cols-12 overflow-hidden rounded-3xl border border-neutral-200/90 dark:border-neutral-800 bg-white/95 dark:bg-[#161619]/95 backdrop-blur-xl shadow-2xl shadow-black/5 dark:shadow-black/40">
         
-        {/* Left Artwork & Classical Wisdom Pillar (5 cols) */}
-        <div className="lg:col-span-5 relative bg-neutral-50/80 dark:bg-[#121214] p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-neutral-200/80 dark:border-neutral-800/80 overflow-hidden">
+        {/* Left Artwork & Classical Wisdom Pillar (5 cols) — hidden on mobile */}
+        <div className="hidden lg:flex lg:col-span-5 relative bg-neutral-50/80 dark:bg-[#121214] p-8 sm:p-10 flex-col justify-between border-b lg:border-b-0 lg:border-r border-neutral-200/80 dark:border-neutral-800/80 overflow-hidden">
           
           {/* Subtle Ambient Radial Glow */}
           <div className="absolute -top-16 -left-16 w-72 h-72 bg-gradient-to-tr from-blue-300/20 to-amber-200/20 dark:from-blue-900/15 dark:to-amber-900/15 rounded-full blur-3xl pointer-events-none" />
@@ -166,14 +166,22 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* Right Auth Form Section (7 cols) */}
-        <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center">
+        {/* Right Auth Form Section (7 cols on lg, full-width on mobile) */}
+        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-12 flex flex-col justify-center">
           
-          <div className="mb-6">
-            <h1 className="font-serif-headline text-2xl sm:text-3xl text-neutral-900 dark:text-neutral-100 font-normal tracking-tight">
+          {/* Mobile-only compact brand header */}
+          <div className="flex items-center gap-2 mb-5 lg:hidden">
+            <div className="w-7 h-7 rounded-full bg-[#111] dark:bg-white flex items-center justify-center text-white dark:text-black">
+              <BookOpen size={14} strokeWidth={2.2} />
+            </div>
+            <span className="font-bold text-base tracking-tight text-neutral-900 dark:text-white">Journify</span>
+          </div>
+
+          <div className="mb-5">
+            <h1 className="font-serif-headline text-xl sm:text-2xl lg:text-3xl text-neutral-900 dark:text-neutral-100 font-normal tracking-tight">
               Sign in to your journal
             </h1>
-            <p className="text-xs sm:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
               Enter your credentials or continue with your verified identity.
             </p>
           </div>

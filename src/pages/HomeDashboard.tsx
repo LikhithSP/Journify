@@ -116,6 +116,7 @@ function FanSpreadSection({
   };
 
   const fanCards = arrangeCenterLatest(entries.slice(0, displayCount));
+  const mobileCards = entries.slice(0, displayCount);
 
   // Center alignment offset mapping based on actual cards count
   const getFanTransform = (i: number, total: number) => {
@@ -142,13 +143,70 @@ function FanSpreadSection({
             {entries.length}
           </span>
         </div>
-        <p className="text-xs text-gray-400 dark:text-gray-500">
+        <p className="text-xs text-gray-400 dark:text-gray-500 hidden sm:block">
           Hover to inspect · Click to read
+        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 sm:hidden">
+          Swipe to explore · Click to read
         </p>
       </div>
 
+      {/* Mobile Horizontal Scroll Cards */}
+      <div className="flex sm:hidden overflow-x-auto gap-3 pb-2 pt-1 snap-x scrollbar-none">
+        {mobileCards.map((entry) => {
+          const mood = entry.mood ? MOOD_MAP[entry.mood] : null;
+          const excerpt = stripHtml(entry.content);
+
+          return (
+            <div
+              key={entry.id}
+              onClick={() => onSelect(entry.id)}
+              className="flex-shrink-0 w-[220px] h-[210px] rounded-xl p-4 flex flex-col justify-between
+                bg-white dark:bg-[#1e1e1e]
+                border border-neutral-200/80 dark:border-[#2e2e2e] shadow-sm cursor-pointer snap-start"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-medium text-neutral-400 dark:text-neutral-500 font-mono">
+                    {formatEntryDate(entry.created_at)}
+                  </span>
+                  {mood && (
+                    <span className="text-base flex-shrink-0" title={entry.mood || undefined}>
+                      {mood.emoji}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-semibold text-neutral-900 dark:text-neutral-100 text-sm leading-snug line-clamp-2">
+                  {entry.title || 'Untitled note'}
+                </h3>
+              </div>
+
+              <p className="text-xs text-neutral-600 dark:text-neutral-400 line-clamp-3 leading-relaxed my-1 font-normal">
+                {excerpt || <span className="italic text-neutral-300 dark:text-neutral-600">Empty page</span>}
+              </p>
+
+              <div className="pt-2 border-t border-neutral-100 dark:border-neutral-800/80 flex items-center justify-between">
+                <div className="flex items-center gap-1 overflow-hidden">
+                  {entry.tags && entry.tags.length > 0 ? (
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded truncate max-w-[120px]">
+                      #{entry.tags[0]}
+                      {entry.tags.length > 1 && ` +${entry.tags.length - 1}`}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-neutral-400 dark:text-neutral-500">
+                      {excerpt ? excerpt.split(' ').filter(Boolean).length : 0} words
+                    </span>
+                  )}
+                </div>
+                <ArrowUpRight size={13} className="text-neutral-400" />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {/* Fan Spread Deck Container */}
-      <div className="relative w-full h-[290px] sm:h-[310px] flex items-center justify-center overflow-visible select-none py-4">
+      <div className="relative w-full h-[310px] hidden sm:flex items-center justify-center overflow-visible select-none py-4">
         {fanCards.map((entry, i) => {
           const cfg = getFanTransform(i, displayCount);
           const isHovered = hoveredIndex === i;
@@ -180,7 +238,7 @@ function FanSpreadSection({
               }}
             >
               <div
-                className={`w-[220px] sm:w-[250px] h-[230px] rounded-xl p-4 flex flex-col justify-between
+                className={`w-[250px] h-[230px] rounded-xl p-4 flex flex-col justify-between
                   bg-white dark:bg-[#1e1e1e]
                   border transition-all duration-200
                   ${isHovered 
@@ -320,7 +378,7 @@ export default function HomeDashboard() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-7 pb-20">
+    <div className="max-w-5xl mx-auto space-y-7 pb-20 pt-14 lg:pt-0">
 
       {/* ── Notion-style Clean Header ── */}
       <div className="border-b border-neutral-200/80 dark:border-neutral-800 pb-5">

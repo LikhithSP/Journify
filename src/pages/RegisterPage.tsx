@@ -100,7 +100,7 @@ export default function RegisterPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, transition: { duration: 0.25 } }}
-      className="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8 bg-[#ffffff] dark:bg-[#111113] text-neutral-900 dark:text-neutral-100 relative overflow-hidden font-sans selection:bg-[#0066ff]/20"
+      className="min-h-screen flex items-start sm:items-center justify-center pt-20 sm:pt-6 lg:pt-8 pb-8 px-4 sm:px-6 lg:px-8 bg-[#ffffff] dark:bg-[#111113] text-neutral-900 dark:text-neutral-100 relative overflow-hidden font-sans selection:bg-[#0066ff]/20"
     >
       {/* Background Sacred Geometric Curves */}
       <motion.div
@@ -162,7 +162,7 @@ export default function RegisterPage() {
           initial={{ opacity: 0, x: -60 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
-          className="lg:col-span-5 relative bg-neutral-50/80 dark:bg-[#121214] p-8 sm:p-10 flex flex-col justify-between border-b lg:border-b-0 lg:border-r border-neutral-200/80 dark:border-neutral-800/80 overflow-hidden"
+          className="hidden lg:flex lg:col-span-5 relative bg-neutral-50/80 dark:bg-[#121214] p-8 sm:p-10 flex-col justify-between border-b lg:border-b-0 lg:border-r border-neutral-200/80 dark:border-neutral-800/80 overflow-hidden"
         >
           {/* Ambient glow */}
           <div className="absolute -top-16 -left-16 w-72 h-72 bg-gradient-to-br from-violet-300/25 to-amber-200/25 dark:from-violet-900/20 dark:to-amber-900/15 rounded-full blur-3xl pointer-events-none" />
@@ -251,8 +251,15 @@ export default function RegisterPage() {
           </motion.div>
         </motion.div>
 
-        {/* RIGHT — Registration Form Section (7 cols) */}
-        <div className="lg:col-span-7 p-8 sm:p-12 flex flex-col justify-center">
+        {/* RIGHT — Registration Form Section (7 cols on lg, full on mobile) */}
+        <div className="lg:col-span-7 p-6 sm:p-8 lg:p-12 flex flex-col justify-center">
+          {/* Mobile-only compact brand header */}
+          <div className="flex items-center gap-2 mb-5 lg:hidden">
+            <div className="w-7 h-7 rounded-full bg-[#111] dark:bg-white flex items-center justify-center text-white dark:text-black">
+              <BookOpen size={14} strokeWidth={2.2} />
+            </div>
+            <span className="font-bold text-base tracking-tight text-neutral-900 dark:text-white">Journify</span>
+          </div>
           <AnimatePresence mode="wait">
             {verificationNotice ? (
               <motion.div

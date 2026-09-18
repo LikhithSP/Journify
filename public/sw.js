@@ -41,25 +41,38 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
-  // Don't cache Supabase API calls with ServiceWorker cache (handled by IndexedDB)
-  if (url.hostname.includes('supabase.co')) {
-    return;
-  }
+  // Skip non-GET requests entirely
+  if (request.method !== 'GET') return;
 
-  // Only cache GET requests
-  if (request.method !== 'GET') {
-    return;
-  }
+  // Skip Supabase API calls (handled by IndexedDB offline layer)
+  if (url.hostname.includes('supabase.co')) return;
+
+  // Skip all cross-origin requests (Google Fonts, CDNs, external APIs)
+  // These use opaque responses which can't be cached safely and cause
+  // "Failed to convert value to 'Response'" errors when undefined is returned.
+  if (url.origin !== self.location.origin) return;
 
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request)
+      // Return cached version immediately while revalidating in background
+      if (cachedResponse) {
+        // Background revalidate
+        fetch(request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, networkResponse);
+              });
+            }
+          })
+          .catch(() => {/* offline, cached copy is already being served */});
+        return cachedResponse;
+      }
+
+      // Not in cache — fetch from network
+      return fetch(request)
         .then((networkResponse) => {
-          if (
-            networkResponse &&
-            networkResponse.status === 200 &&
-            networkResponse.type === 'basic'
-          ) {
+          if (networkResponse && networkResponse.status === 200) {
             const responseToCache = networkResponse.clone();
             caches.open(CACHE_NAME).then((cache) => {
               cache.put(request, responseToCache);
@@ -68,17 +81,17 @@ self.addEventListener('fetch', (event) => {
           return networkResponse;
         })
         .catch(() => {
-          // If offline and request is navigation, return cached index.html
+          // Offline and no cache — for navigation requests return cached shell
           if (request.mode === 'navigate') {
-            return caches.match('/index.html') as Promise<Response>;
+            return caches.match('/index.html').then((r) => r || new Response('Offline', { status: 503 }));
           }
-          return cachedResponse;
+          // For other requests return a generic offline response
+          return new Response('Offline', { status: 503, statusText: 'Service Unavailable' });
         });
-
-      return cachedResponse || fetchPromise;
     })
   );
 });
+
 
 // Background Sync trigger
 self.addEventListener('sync', (event) => {

@@ -4,7 +4,6 @@
  * Stores:
  * - 'entries': cached and local-created journal entries
  * - 'sync_queue': operations to be executed when back online
- * - 'folders': local folders
  */
 
 import type { JournalEntry } from '../types/journal';
@@ -49,7 +48,7 @@ export class OfflineDB {
           queueStore.createIndex('entityId', 'entityId', { unique: false });
         }
 
-        // Store 3: Folders
+        // Store 3: Folders (kept for schema compatibility, feature removed)
         if (!db.objectStoreNames.contains('folders')) {
           const folderStore = db.createObjectStore('folders', { keyPath: 'id' });
           folderStore.createIndex('user_id', 'user_id', { unique: false });
@@ -196,61 +195,9 @@ export class OfflineDB {
     });
   }
 
-  // --- Folders Store Methods ---
-
-  public static async getAllFolders(userId: string): Promise<any[]> {
-    const db = await this.getDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('folders', 'readonly');
-      const store = tx.objectStore('folders');
-      const index = store.index('user_id');
-      const request = index.getAll(userId);
-
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  public static async putFolder(folder: any): Promise<void> {
-    const db = await this.getDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('folders', 'readwrite');
-      const store = tx.objectStore('folders');
-      const request = store.put(folder);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  public static async putFoldersBatch(folders: any[]): Promise<void> {
-    const db = await this.getDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('folders', 'readwrite');
-      const store = tx.objectStore('folders');
-      folders.forEach((folder) => {
-        store.put(folder);
-      });
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  }
-
-  public static async deleteFolder(id: string): Promise<void> {
-    const db = await this.getDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction('folders', 'readwrite');
-      const store = tx.objectStore('folders');
-      const request = store.delete(id);
-
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
   public static async clearAll(): Promise<void> {
     const db = await this.getDB();
-    const storeNames = ['entries', 'sync_queue', 'folders'];
+    const storeNames = ['entries', 'sync_queue'];
     return new Promise((resolve, reject) => {
       const tx = db.transaction(storeNames, 'readwrite');
       storeNames.forEach((storeName) => {

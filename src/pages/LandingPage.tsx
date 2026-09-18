@@ -178,24 +178,24 @@ export default function LandingPage() {
     <div className="min-h-screen bg-[#ffffff] dark:bg-[#111113] text-[#1c1c1c] dark:text-[#f0f0f0] selection:bg-[#0066ff]/20 overflow-x-hidden font-sans">
       
       {/* ── Modern Rounded Floating Navbar ── */}
-      <header className="fixed top-3 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+      <header className="fixed top-3 left-0 right-0 z-50 flex justify-center px-3 sm:px-4 pointer-events-none">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-5xl rounded-full bg-white/80 dark:bg-[#151518]/80 backdrop-blur-xl border border-neutral-200/80 dark:border-neutral-800 shadow-lg shadow-black/[0.04] dark:shadow-black/20 px-5 sm:px-6 py-2.5 flex items-center justify-between pointer-events-auto transition-all"
+          className="w-full max-w-5xl rounded-full bg-white/80 dark:bg-[#151518]/80 backdrop-blur-xl border border-neutral-200/80 dark:border-neutral-800 shadow-lg shadow-black/[0.04] dark:shadow-black/20 px-4 sm:px-6 py-2 sm:py-2.5 flex items-center justify-between pointer-events-auto transition-all"
         >
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-full bg-[#111] dark:bg-white flex items-center justify-center text-white dark:text-black transition-transform group-hover:scale-105">
-              <BookOpen size={16} strokeWidth={2.2} />
+          <Link to="/" className="flex items-center gap-2 group">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#111] dark:bg-white flex items-center justify-center text-white dark:text-black transition-transform group-hover:scale-105">
+              <BookOpen size={14} strokeWidth={2.2} />
             </div>
-            <span className="font-bold text-lg tracking-tight text-neutral-900 dark:text-white">
+            <span className="font-bold text-base sm:text-lg tracking-tight text-neutral-900 dark:text-white">
               Journify
             </span>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navigation Links — hidden on mobile */}
           <nav className="hidden md:flex items-center gap-8 text-[13.5px] font-medium text-neutral-600 dark:text-neutral-400">
             <a href="#philosophy" className="hover:text-black dark:hover:text-white transition-colors">Philosophy</a>
             <a href="#features" className="hover:text-black dark:hover:text-white transition-colors">Features</a>
@@ -204,23 +204,23 @@ export default function LandingPage() {
           </nav>
 
           {/* CTA & Theme toggle */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2.5">
             <button
               onClick={toggleTheme}
               className="p-1.5 rounded-full text-neutral-500 hover:text-black dark:hover:text-white transition-colors"
               aria-label="Toggle theme"
             >
-              {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
             <Link
               to="/login"
-              className="text-[13.5px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors hidden sm:inline px-2"
+              className="text-[13px] font-medium text-neutral-600 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors hidden sm:inline px-2"
             >
               Sign in
             </Link>
             <Link
               to="/register"
-              className="px-4 py-1.5 rounded-full text-[13px] font-medium bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity shadow-xs"
+              className="px-3 sm:px-4 py-1.5 rounded-full text-[12px] sm:text-[13px] font-medium bg-neutral-900 text-white dark:bg-white dark:text-neutral-900 hover:opacity-90 transition-opacity shadow-xs whitespace-nowrap"
             >
               Get started
             </Link>
@@ -228,8 +228,8 @@ export default function LandingPage() {
         </motion.div>
       </header>
 
-      {/* ── HERO SECTION (MATCHING REFERENCE IMAGE) ── */}
-      <section className="relative pt-14 pb-12 lg:pt-16 lg:pb-16 overflow-hidden">
+      {/* ── HERO SECTION ── */}
+      <section className="relative pt-24 sm:pt-20 lg:pt-16 pb-10 sm:pb-12 lg:pb-16 overflow-hidden">
         {/* Subtle background curved geometric lines */}
         <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-15 flex items-center justify-center">
           <svg className="w-full h-full max-w-[1400px]" viewBox="0 0 1400 900" fill="none" stroke="currentColor">
@@ -240,81 +240,74 @@ export default function LandingPage() {
           </svg>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-10 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-4 items-center min-h-[540px] lg:min-h-[600px]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-4 items-center">
             
-            {/* Left Hero Content (6 Columns on large screens for artwork room) */}
-            <div className="lg:col-span-6">
+            {/* Left Hero Content */}
+            <div className="lg:col-span-6 text-center lg:text-left">
               
-              {/* Editorial Headline tailored specifically to Journify */}
               <motion.h1
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                className="font-serif-headline text-4xl sm:text-6xl md:text-[66px] leading-[1.08] text-neutral-900 dark:text-neutral-100 tracking-[-0.015em] mb-6 font-normal"
+                className="font-serif-headline text-3xl sm:text-5xl md:text-[60px] lg:text-[66px] leading-[1.1] text-neutral-900 dark:text-neutral-100 tracking-[-0.015em] mb-4 sm:mb-6 font-normal"
               >
                 A great life needs more than memory. It needs a <span className="italic font-normal">journal.</span>
               </motion.h1>
 
-              {/* Subheading description directly mentioning journaling & Journify capabilities */}
               <motion.p
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
-                className="text-base sm:text-lg md:text-[19px] text-neutral-600 dark:text-neutral-400 max-w-xl leading-relaxed mb-8 font-normal"
+                className="text-sm sm:text-base lg:text-[19px] text-neutral-600 dark:text-neutral-400 max-w-xl mx-auto lg:mx-0 leading-relaxed mb-7 sm:mb-8 font-normal"
               >
                 Capture daily thoughts, voice reflections, and personal milestones in a quiet, Notion-inspired space. End-to-end encrypted, offline-first, and completely your own.
               </motion.p>
 
-              {/* Buttons: Electric Blue Primary + Pill Outline Secondary */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                className="flex items-center gap-3.5 mb-14"
+                className="flex flex-wrap items-center justify-center lg:justify-start gap-3 mb-10 sm:mb-14"
               >
-                {/* Electric Blue Pill Button */}
                 <Link
                   to="/register"
-                  className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full bg-[#0066ff] hover:bg-[#0052cc] text-white font-medium text-sm transition-all shadow-md shadow-[#0066ff]/25 hover:shadow-lg hover:shadow-[#0066ff]/35 active:scale-[0.98]"
+                  className="inline-flex items-center gap-2.5 px-5 sm:px-6 py-2.5 sm:py-3 rounded-full bg-[#0066ff] hover:bg-[#0052cc] text-white font-medium text-sm transition-all shadow-md shadow-[#0066ff]/25 hover:shadow-lg hover:shadow-[#0066ff]/35 active:scale-[0.98]"
                 >
                   <span>Start your journal free</span>
                   <ArrowRight size={15} />
                 </Link>
 
-                {/* Pill Outline Button */}
                 <a
                   href="#features"
-                  className="inline-flex items-center justify-center px-5 py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white/70 dark:bg-neutral-800/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-medium transition-colors"
+                  className="inline-flex items-center justify-center px-5 py-2.5 sm:py-3 rounded-full border border-neutral-200 dark:border-neutral-700 bg-white/70 dark:bg-neutral-800/60 hover:bg-neutral-100 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 text-sm font-medium transition-colors"
                 >
                   Explore features
                 </a>
               </motion.div>
 
-              {/* Divider line grey in dark mode */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.35 }}
-                className="pt-6 border-t border-neutral-200 dark:border-neutral-700/80"
+                className="pt-6 border-t border-neutral-200 dark:border-neutral-700/80 hidden lg:block"
               />
             </div>
 
-            {/* Right Hero Image (Classical Scholar / Master with Book - Enlarged Hero Presence) */}
-            <div className="lg:col-span-6 relative flex items-center justify-center lg:justify-end mt-8 lg:mt-0">
+            {/* Right Hero Image */}
+            <div className="lg:col-span-6 relative flex items-center justify-center lg:justify-end">
               <motion.div
                 initial={{ opacity: 0, scale: 0.92, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                className="relative w-full max-w-[520px] sm:max-w-[620px] lg:max-w-[720px] flex justify-center lg:justify-end"
+                className="relative w-full max-w-[280px] sm:max-w-[420px] lg:max-w-[720px] flex justify-center lg:justify-end"
               >
-                {/* Ambient glow behind classical artwork */}
                 <div className="absolute -inset-8 bg-gradient-to-tr from-amber-200/25 via-blue-200/25 to-transparent dark:from-amber-950/25 dark:via-blue-950/25 rounded-full blur-3xl pointer-events-none" />
 
                 <img
                   src={HERO_IMAGE_URL}
                   alt="Classical scholar reading a journal book"
-                  className="relative z-10 w-full h-auto max-h-[640px] sm:max-h-[700px] lg:max-h-[780px] object-contain drop-shadow-2xl select-none"
+                  className="relative z-10 w-full h-auto max-h-[320px] sm:max-h-[500px] lg:max-h-[780px] object-contain drop-shadow-2xl select-none"
                   loading="eager"
                 />
               </motion.div>
@@ -324,8 +317,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── SECTION 2: PHILOSOPHY (The Master's Workshop) ── */}
-      <section id="philosophy" className="py-24 px-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
+      {/* ── SECTION 2: PHILOSOPHY ── */}
+      <section id="philosophy" className="py-14 sm:py-24 px-5 sm:px-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-900/30">
         <div className="max-w-4xl mx-auto text-center">
           <span className="text-xs font-semibold uppercase tracking-widest text-[#0066ff]">
             The Journify Standard
