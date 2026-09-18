@@ -17,6 +17,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useProfileInfo } from '../pages/ProfilePage';
 import { supabase } from '../lib/supabase';
 import Dashboard from '../pages/Dashboard';
+import OfflineSyncBanner from './OfflineSyncBanner';
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -254,6 +255,9 @@ export default function Layout() {
           {location.pathname === '/' ? <Dashboard setDraggedJournalId={setDraggedJournalId} /> : <Outlet />}
         </div>
       </main>
+
+      {/* Floating Offline / Background Sync Status Banner */}
+      <OfflineSyncBanner />
     </div>
   );
 }

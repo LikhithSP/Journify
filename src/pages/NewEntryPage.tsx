@@ -48,6 +48,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { SyncEngine } from '../services/syncEngine';
 import { validateFileUpload, sanitizeUploadFileName } from '../lib/security';
 import { DraftService } from '../services/draftService';
 import type { VersionSnapshot } from '../services/draftService';
@@ -250,33 +251,18 @@ export default function NewEntryPage() {
         };
 
         if (persistedEntryId) {
-          // Update existing row
-          const { error } = await supabase
-            .from('journal_entries')
-            .update(payload)
-            .eq('id', persistedEntryId)
-            .eq('user_id', user.id);
-
-          if (error) throw error;
+          // Update via SyncEngine: stores in IndexedDB, enqueues sync, syncs if online
+          await SyncEngine.updateEntryOptimistic(user.id, persistedEntryId, payload);
         } else {
-          // First autosave insert
-          const { data, error } = await supabase
-            .from('journal_entries')
-            .insert([{ ...payload, user_id: user.id }])
-            .select('id')
-            .single();
-
-          if (error) throw error;
-          if (data) {
-            setPersistedEntryId(data.id);
-            // Re-key draft with the created server ID
-            DraftService.saveDraft(data.id, {
-              title: currentTitle,
-              content: currentContent,
-              mood,
-              tags,
-            });
-          }
+          // Create via SyncEngine: stores in IndexedDB, enqueues sync, syncs if online
+          const created = await SyncEngine.createEntryOptimistic(user.id, payload);
+          setPersistedEntryId(created.id);
+          DraftService.saveDraft(created.id, {
+            title: currentTitle,
+            content: currentContent,
+            mood,
+            tags,
+          });
         }
 
         setSyncStatus('saved');

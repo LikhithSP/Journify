@@ -47,6 +47,7 @@ import {
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { SyncEngine } from '../services/syncEngine';
 import { validateFileUpload, sanitizeUploadFileName } from '../lib/security';
 import { DraftService } from '../services/draftService';
 import type { VersionSnapshot } from '../services/draftService';
@@ -252,22 +253,16 @@ export default function EditEntryPage() {
 
       setSyncStatus('saving');
 
-      // 2. Sync to Supabase server
+      // 2. Sync via SyncEngine: optimistic IndexedDB update + sync queue
       try {
-        const { error } = await supabase
-          .from('journal_entries')
-          .update({
-            title: currentTitle || 'Untitled Entry',
-            content: currentContent,
-            mood,
-            tags: tags.length > 0 ? tags : undefined,
-            is_favorite: isFavorite,
-            is_private: isPrivate,
-          })
-          .eq('id', id)
-          .eq('user_id', user.id);
-
-        if (error) throw error;
+        await SyncEngine.updateEntryOptimistic(user.id, id, {
+          title: currentTitle || 'Untitled Entry',
+          content: currentContent,
+          mood,
+          tags: tags.length > 0 ? tags : undefined,
+          is_favorite: isFavorite,
+          is_private: isPrivate,
+        });
 
         setSyncStatus('saved');
         setLastSavedTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));

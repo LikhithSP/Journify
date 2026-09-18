@@ -6,7 +6,8 @@ import {
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { SyncEngine } from '../services/syncEngine';
+import { OfflineDB } from '../services/offlineDB';
 import EmptyState from '../components/EmptyState';
 import NotionCard from '../components/NotionCard';
 
@@ -28,19 +29,12 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
     async function loadEntries() {
       if (!user) return;
       const now = Date.now();
-      // Only allow fetch if at least 10ms passed since last fetch
       if (now - lastFetchRef.current < 10) return;
       lastFetchRef.current = now;
       setLoading(true);
       try {
-        // Direct Supabase API call to fetch entries
-        const { data, error } = await supabase
-          .from('journal_entries')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false });
-        if (error) throw error;
-        const journalEntries = data as JournalEntry[];
+        // Pull entries via SyncEngine: serves from Supabase if online, IndexedDB if offline
+        const journalEntries = await SyncEngine.pullServerEntries(user.id);
         setAllEntries(journalEntries);
         const tags = new Set<string>();
         journalEntries.forEach(entry => {
@@ -52,7 +46,15 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
         setError(null);
       } catch (error) {
         console.error('Error fetching journal entries:', error);
-        setError('Failed to load your journal entries. Please try again later.');
+        // Secondary fallback to IndexedDB
+        try {
+          const offlineEntries = await OfflineDB.getAllEntries(user.id);
+          setAllEntries(offlineEntries);
+        } catch (e) {
+          setError('Failed to load your journal entries. Please try again later.');
+        }
+      } finally {
+        setLoading(false);
       }
     }
 
