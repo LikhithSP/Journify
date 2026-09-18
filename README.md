@@ -107,6 +107,40 @@
 
 ---
 
+### 6. 📅 Interactive Calendar & Timeline (`/calendar`)
+- **Monday-to-Sunday Month Grid (`M T W T F S S`)**: Accurate month matrix view with quick month switching and "Today" reset.
+- **Rich Daily Metadata Indicators**:
+  - **Entry Indicator**: Emerald dot and highlight if an entry exists on that day.
+  - **Mood**: Direct emoji and calibrated mood pill preview (`😊 Joyful`, `😌 Peaceful`, `😔 Sad`, `😠 Angry`, `😰 Anxious`).
+  - **Word Count**: Daily word count badges (e.g. `240w`).
+  - **Streak Counter**: Consecutive writing streak calculation with animated flame counter (`🔥 N-day streak`).
+  - **Tag Preview**: Direct tag preview chips on day tiles.
+- **Click Date → Entry Drilldown**: Selecting any date displays that day's timeline stream with titles, excerpts, timestamps, and one-click navigation to view/edit or write.
+
+---
+
+### 7. 🎙️ Voice Journaling (Speech-to-Text Pipeline)
+```
+🎙 Record
+     ↓
+Speech-to-text
+     ↓
+Transcript
+     ↓
+Journal Entry
+```
+- **Live Recording & Audio Waveform**: Animated visualizer reacting to audio input with recording elapsed timer.
+- **Continuous Speech-to-Text Engine**: Cross-browser Web Speech API (`SpeechRecognition` / `webkitSpeechRecognition`) with interim live streaming.
+- **Live Transcript Window**: Real-time display of spoken words and running word count.
+- **Smart Journal Extraction**: Automatically derives:
+  - **Title**: Smartly extracts a concise title from the initial speech sentence.
+  - **Paragraph Formatting**: Structures stream of thought into clean HTML paragraphs.
+  - **Emotion / Mood Detection**: Detects mood keywords (`joyful`, `peaceful`, `sad`, `angry`, `anxious`).
+  - **Smart Tagging**: Automatically tags topics like `#work`, `#ideas`, `#personal`, `#voice`.
+- **Direct Entry Insertion**: Convert and push straight into the TipTap rich editor on [`/entry/new`](file:///c:/Users/Cutie/Documents/GitHub/Journify/src/pages/NewEntryPage.tsx), [`/entry/:id/edit`](file:///c:/Users/Cutie/Documents/GitHub/Journify/src/pages/EditEntryPage.tsx), or quick launch from [`Dashboard.tsx`](file:///c:/Users/Cutie/Documents/GitHub/Journify/src/pages/Dashboard.tsx).
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Frontend**: React 19, TypeScript, Vite, TailwindCSS

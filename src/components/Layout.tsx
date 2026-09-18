@@ -181,10 +181,11 @@ export default function Layout() {
               
               {/* Navigation */}
               <nav className="flex-1 px-2 pb-4 space-y-1">
-                {/* Quick Actions */}                <div className="mb-5 px-3">
+                {/* Quick Actions */}
+                <div className="mb-5 px-3 space-y-1.5">
                   <button 
                     onClick={() => navigate('/entry/new')}
-                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm font-medium text-black dark:text-white bg-gray-100 dark:bg-[rgb(44,44,44)] hover:bg-gray-200 dark:hover:bg-[rgb(60,60,60)] mb-2 transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-1.5 rounded-md text-sm font-medium text-black dark:text-white bg-gray-100 dark:bg-[rgb(44,44,44)] hover:bg-gray-200 dark:hover:bg-[rgb(60,60,60)] transition-colors"
                   >
                     <div className="flex items-center">
                       <Plus size={15} className="mr-2" />

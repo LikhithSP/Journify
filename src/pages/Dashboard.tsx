@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { 
-  Plus, Tag, Search, X, Smile, ArchiveX, FilterX, Calendar as CalendarIcon
+  Plus, Tag, Search, X, Smile, ArchiveX, FilterX, Calendar as CalendarIcon, Mic
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
@@ -11,9 +11,13 @@ import { SyncEngine } from '../services/syncEngine';
 import { OfflineDB } from '../services/offlineDB';
 import EmptyState from '../components/EmptyState';
 import NotionCard from '../components/NotionCard';
+import VoiceJournalModal from '../components/VoiceJournalModal';
+import { DraftService } from '../services/draftService';
+import { useNavigate } from 'react-router-dom';
 
 // Add prop to pass drag state setter to NotionCard
 export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId?: (id: string | null) => void } = {}) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [allEntries, setAllEntries] = useState<JournalEntry[]>([]);
@@ -23,6 +27,7 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
   const location = useLocation();
   const lastFetchRef = useRef(0);
 
@@ -173,6 +178,15 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 py-4 border-b border-gray-200 dark:border-gray-800 gap-4">
         <h1 className="notion-page-title text-4xl font-semibold text-gray-800 dark:text-gray-100">My Journals</h1>
         <div className="flex items-center space-x-3 flex-wrap gap-2">
+          <button
+            onClick={() => setVoiceModalOpen(true)}
+            className="notion-button flex items-center bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/60 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/60 px-3 py-1.5 rounded-md text-sm font-medium transition"
+            title="Record Voice Journal"
+          >
+            <Mic size={14} className="mr-1.5 animate-pulse" />
+            <span>Voice Journal</span>
+          </button>
+
           <Link
             to="/calendar"
             className="notion-button flex items-center bg-gray-100 dark:bg-neutral-800 text-gray-800 dark:text-gray-200 px-3 py-1.5 rounded-md text-sm font-medium hover:bg-gray-200 dark:hover:bg-neutral-700 transition"
@@ -298,6 +312,22 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
           ))}
         </motion.div>
       )}
+
+      {/* Voice Journaling Modal */}
+      <VoiceJournalModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        onApplyToEditor={(voiceData) => {
+          // Pre-save draft in DraftService so NewEntryPage loads it directly
+          DraftService.saveDraft('new', {
+            title: voiceData.title || '',
+            content: voiceData.contentHtml || '<p></p>',
+            mood: voiceData.mood || null,
+            tags: voiceData.tags || [],
+          });
+          navigate('/entry/new');
+        }}
+      />
     </div>
   );
 }

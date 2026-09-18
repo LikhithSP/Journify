@@ -42,7 +42,8 @@ import {
   Check, 
   Cloud, 
   History, 
-  Paperclip
+  Paperclip,
+  Mic
 } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
@@ -53,6 +54,7 @@ import { DraftService } from '../services/draftService';
 import type { VersionSnapshot } from '../services/draftService';
 import SlashCommandMenu from '../components/SlashCommandMenu';
 import VersionHistoryModal from '../components/VersionHistoryModal';
+import VoiceJournalModal from '../components/VoiceJournalModal';
 
 export default function EditEntryPage() {
   const navigate = useNavigate();
@@ -83,6 +85,9 @@ export default function EditEntryPage() {
   // Version history modal state
   const [historyOpen, setHistoryOpen] = useState(false);
   const [versionSnapshots, setVersionSnapshots] = useState<VersionSnapshot[]>([]);
+
+  // Voice dictation modal state
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
 
   // Attachments
   const [uploadingMedia, setUploadingMedia] = useState(false);
@@ -403,6 +408,17 @@ export default function EditEntryPage() {
             </span>
           )}
 
+          {/* Voice Journaling Button */}
+          <button
+            type="button"
+            onClick={() => setVoiceModalOpen(true)}
+            className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/60 text-xs font-semibold transition"
+            title="Voice Journaling (Speech-to-text)"
+          >
+            <Mic size={14} className="animate-pulse" />
+            <span className="hidden sm:inline">Voice Note</span>
+          </button>
+
           {/* Version History Button */}
           <button
             type="button"
@@ -604,6 +620,16 @@ export default function EditEntryPage() {
               />
               <Paperclip size={15} className={uploadingMedia ? 'animate-spin' : ''} />
             </label>
+
+            {/* Voice Dictation button */}
+            <button
+              type="button"
+              onClick={() => setVoiceModalOpen(true)}
+              className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-950/40 text-red-500 transition"
+              title="Dictate with Voice (Speech to Text)"
+            >
+              <Mic size={15} />
+            </button>
           </div>
         )}
 
@@ -713,6 +739,31 @@ export default function EditEntryPage() {
         versions={versionSnapshots}
         onRestore={handleRestoreDraft}
         currentTitle={title}
+      />
+
+      {/* Voice Journaling Modal */}
+      <VoiceJournalModal
+        isOpen={voiceModalOpen}
+        onClose={() => setVoiceModalOpen(false)}
+        onApplyToEditor={(voiceData) => {
+          if (voiceData.title && (!title || title === 'Untitled')) {
+            setTitle(voiceData.title);
+          }
+          if (voiceData.mood && !mood) {
+            setMood(voiceData.mood);
+          }
+          if (voiceData.tags && voiceData.tags.length > 0) {
+            setTags((prev) => Array.from(new Set([...prev, ...voiceData.tags!])));
+          }
+          if (editor && voiceData.contentHtml) {
+            const currentContent = editor.getHTML();
+            if (currentContent && currentContent !== '<p></p>') {
+              editor.commands.setContent(currentContent + voiceData.contentHtml);
+            } else {
+              editor.commands.setContent(voiceData.contentHtml);
+            }
+          }
+        }}
       />
     </motion.div>
   );
