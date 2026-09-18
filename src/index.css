@@ -34,6 +34,10 @@
   ::selection {
     @apply bg-gray-200 dark:bg-gray-700;
   }
+
+  .font-serif-headline {
+    font-family: 'Newsreader', 'Instrument Serif', Georgia, Cambria, 'Times New Roman', Times, serif;
+  }
 }
 
 @layer components {
