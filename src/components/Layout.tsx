@@ -7,17 +7,21 @@ import {
   LogOut, 
   Moon, 
   Sun, 
-  Home,
-  FolderPlus,
-  Folder
+  Home, 
+  Search,
+  FolderPlus, 
+  Folder 
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useProfileInfo } from '../pages/ProfilePage';
 import { supabase } from '../lib/supabase';
+import { OfflineDB } from '../services/offlineDB';
 import Dashboard from '../pages/Dashboard';
 import OfflineSyncBanner from './OfflineSyncBanner';
+import GlobalSearchModal from './GlobalSearchModal';
+import type { JournalEntry } from '../types/journal';
 
 export default function Layout() {
   const navigate = useNavigate();
@@ -31,6 +35,34 @@ export default function Layout() {
   const [newFolderName, setNewFolderName] = useState('');
   // Drag and drop state for journal id
   const [draggedJournalId, setDraggedJournalId] = useState<string | null>(null);
+
+  // Global search modal state
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchEntries, setSearchEntries] = useState<JournalEntry[]>([]);
+
+  // Fetch all entries for global search modal (cached in OfflineDB)
+  useEffect(() => {
+    async function loadSearchData() {
+      if (!user) return;
+      try {
+        const localEntries = await OfflineDB.getAllEntries(user.id);
+        if (localEntries.length > 0) setSearchEntries(localEntries);
+
+        if (navigator.onLine) {
+          const { data } = await supabase
+            .from('journal_entries')
+            .select('*')
+            .eq('user_id', user.id);
+          if (data) setSearchEntries(data as JournalEntry[]);
+        }
+      } catch (e) {}
+    }
+    loadSearchData();
+  }, [user, location.pathname]);
+
+  // Derived tags & moods for search
+  const availableTags = Array.from(new Set(searchEntries.flatMap((e) => e.tags || []))).sort();
+  const availableMoods = Array.from(new Set(searchEntries.map((e) => e.mood).filter(Boolean))) as string[];
 
   // Fetch folders from Supabase
   useEffect(() => {
@@ -142,7 +174,18 @@ export default function Layout() {
                     </div>
                     <span className="text-xs text-gray-500 dark:text-gray-400">⌘N</span>
                   </button>
-                </div>                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
+                </div>                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300`}>
+                  <Search size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  <button 
+                    onClick={() => setSearchOpen(true)}
+                    className="flex-1 text-left flex items-center justify-between"
+                  >
+                    <span>Search</span>
+                    <span className="text-[10px] bg-gray-200 dark:bg-neutral-800 px-1.5 py-0.5 rounded text-gray-500">⌘K</span>
+                  </button>
+                </div>
+
+                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
                   <Home size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
                   <button 
                     onClick={() => navigate('/')}
@@ -258,6 +301,15 @@ export default function Layout() {
 
       {/* Floating Offline / Background Sync Status Banner */}
       <OfflineSyncBanner />
+
+      {/* Global Command Palette & Search Modal */}
+      <GlobalSearchModal
+        isOpen={searchOpen}
+        onClose={() => setSearchOpen(false)}
+        entries={searchEntries}
+        availableTags={availableTags}
+        availableMoods={availableMoods}
+      />
     </div>
   );
 }

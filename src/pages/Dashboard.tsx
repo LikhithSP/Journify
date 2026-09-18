@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
 import { 
   Plus, Tag, Search, X, Smile, ArchiveX, FilterX
 } from 'lucide-react';
@@ -74,14 +75,21 @@ export default function Dashboard({ setDraggedJournalId }: { setDraggedJournalId
   const filteredEntries = useMemo(() => {
     let filteredData = [...allEntries];
     
-    // Apply search query filter
+    // Apply search query filter across title, content, tags, mood, and formatted date
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase();
-      filteredData = filteredData.filter(entry => 
-        entry.title.toLowerCase().includes(query) || 
-        entry.content.toLowerCase().includes(query) ||
-        (entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(query)))
-      );
+      filteredData = filteredData.filter(entry => {
+        const titleMatch = entry.title.toLowerCase().includes(query);
+        const contentMatch = entry.content.toLowerCase().includes(query);
+        const tagMatch = entry.tags && entry.tags.some(tag => tag.toLowerCase().includes(query));
+        const moodMatch = entry.mood && entry.mood.toLowerCase().includes(query);
+        let dateMatch = false;
+        try {
+          const dateStr = format(new Date(entry.created_at), 'MMMM d, yyyy EEEE').toLowerCase();
+          dateMatch = dateStr.includes(query);
+        } catch (e) {}
+        return titleMatch || contentMatch || tagMatch || moodMatch || dateMatch;
+      });
     }
     
     // Apply mood filter
