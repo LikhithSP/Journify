@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import LoginPage from './pages/LoginPage.tsx';
 import RegisterPage from './pages/RegisterPage.tsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.tsx';
 import Dashboard from './pages/Dashboard.tsx';
 import EntryPage from './pages/EntryPage.tsx';
 import NewEntryPage from './pages/NewEntryPage.tsx';
@@ -28,7 +29,7 @@ function App() {
       setLoading(false);
     });
 
-    // Listen for auth changes
+    // Listen for auth changes (including recovery token callbacks)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
@@ -41,9 +42,9 @@ function App() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse-slow">
-          <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-[#111113]">
+        <div className="animate-pulse">
+          <div className="w-10 h-10 border-2 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -55,8 +56,10 @@ function App() {
         <Router>
           <AnimatePresence mode="wait">
             <Routes>
+              {/* Public & Authentication Routes */}
               <Route path="/login" element={!session ? <LoginPage /> : <Navigate to="/" />} />
               <Route path="/register" element={!session ? <RegisterPage /> : <Navigate to="/" />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
               
               {/* Protected Routes */}
               <Route path="/" element={session ? <Layout /> : <Navigate to="/login" />}>
@@ -75,4 +78,4 @@ function App() {
   );
 }
 
-export default App
+export default App;

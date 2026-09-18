@@ -6,6 +6,7 @@ import { ArrowLeft, Trash2, Edit, Star, Calendar, Clock } from 'lucide-react';
 import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { sanitizeHtml } from '../lib/security';
 
 export default function EntryPage() {
   const { id } = useParams<{ id: string }>();
@@ -212,10 +213,10 @@ export default function EntryPage() {
           </div>
         )}
 
-        {/* Entry content */}
+        {/* Entry content with XSS Sanitization */}
         <div 
           className="prose prose-lg dark:prose-invert max-w-none"
-          dangerouslySetInnerHTML={{ __html: entry.content }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(entry.content) }}
         />
 
         {/* Location and weather would appear here */}
