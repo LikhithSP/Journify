@@ -16,6 +16,7 @@ import { supabase } from './lib/supabase';
 import ProfilePage from './pages/ProfilePage.tsx';
 import CalendarPage from './pages/CalendarPage.tsx';
 import FolderDashboard from './pages/FolderDashboard';
+import PrivacyCenterPage from './pages/PrivacyCenterPage';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -70,6 +71,7 @@ function App() {
                 <Route path="/entry/:id/edit" element={<EditEntryPage />} />
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
+                <Route path="/privacy" element={<PrivacyCenterPage />} />
                 <Route path="/folder/:folderId" element={<FolderDashboard />} />
               </Route>
             </Routes>

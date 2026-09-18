@@ -137,7 +137,24 @@ Journal Entry
   - **Paragraph Formatting**: Structures stream of thought into clean HTML paragraphs.
   - **Emotion / Mood Detection**: Detects mood keywords (`joyful`, `peaceful`, `sad`, `angry`, `anxious`).
   - **Smart Tagging**: Automatically tags topics like `#work`, `#ideas`, `#personal`, `#voice`.
-- **Direct Entry Insertion**: Convert and push straight into the TipTap rich editor on [`/entry/new`](file:///c:/Users/Cutie/Documents/GitHub/Journify/src/pages/NewEntryPage.tsx), [`/entry/:id/edit`](file:///c:/Users/Cutie/Documents/GitHub/Journify/src/pages/EditEntryPage.tsx), or quick launch from [`Dashboard.tsx`](file:///c:/Users/Cutie/Documents/GitHub/Journify/src/pages/Dashboard.tsx).
+### 8. 🛡️ Privacy Center & Cryptographic Transparency (`/privacy`)
+Privacy is Journify's identity. Your thoughts belong entirely to you:
+- **Your Data Governance**:
+  - **✓ Export Everything**: Complete machine-readable JSON archive containing your journal entries, folders, tags, and account metadata.
+  - **✓ Download Journals**: Clean Markdown (`.md`) format export ready for Obsidian, Notion, or personal print.
+  - **✓ Manage Offline Cache**: Instant purge for local browser IndexedDB cached entries and drafts.
+  - **✓ Manage Sessions**: Active device inspection with one-click revocation across all signed-in devices.
+  - **✓ Connected Accounts**: Inspection of OAuth providers (Google, GitHub, Email).
+  - **✓ Permanent Account Deletion**: Irrevocable wiping of all user rows, files, and credentials from cloud and client storage.
+- **Cryptographic Specifications & Transparency**:
+  - **In-Transit**: Enforced TLS 1.3 encryption across all API requests.
+  - **At-Rest Database Encryption**: AES-256 transparent PostgreSQL database volume storage encryption via Supabase.
+  - **Media Storage**: AWS S3 Server-Side Encryption (AES-256).
+  - **E2EE Transparency**: Honest reporting of cloud-sync architecture without deceptive marketing claims.
+- **Granular Consent Management**:
+  - Independent toggles for Cloud Synchronization, Speech-to-Text Voice Dictation, and Anonymous Diagnostics.
+- **Data Retention & Privacy Policy**:
+  - Documented retention standards: zero data retention beyond explicit user preservation and no ad-targeting or model training on private entries.
 
 ---
 

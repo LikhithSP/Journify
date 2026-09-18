@@ -856,6 +856,28 @@ export default function ProfilePage() {
         {/* Tab 4: Data Export & Danger Zone */}
         {activeTab === 'data' && (
           <div className="p-6 space-y-8">
+            {/* Privacy Center Callout */}
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-neutral-800/40 border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <ShieldCheck size={20} className="text-black dark:text-white" />
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-900 dark:text-gray-100">
+                    Dedicated Privacy Center & Consent Governance
+                  </h4>
+                  <p className="text-[11px] text-gray-500">
+                    Review cryptographic transparency, encryption at rest, data retention policies, and consent controls.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => navigate('/privacy')}
+                className="py-1.5 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-medium hover:opacity-90 transition"
+              >
+                Open Privacy Center
+              </button>
+            </div>
+
             {/* GDPR Data Export */}
             <div>
               <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1 flex items-center">

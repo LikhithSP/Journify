@@ -10,6 +10,7 @@ import {
   Home, 
   Search,
   Calendar,
+  ShieldCheck,
   FolderPlus, 
   Folder 
 } from 'lucide-react';
@@ -221,6 +222,16 @@ export default function Layout() {
                     className="flex-1 text-left"
                   >
                     Calendar & Timeline
+                  </button>
+                </div>
+
+                <div className={`px-2 py-1.5 rounded text-sm flex items-center mb-1 group transition-colors ${isActive('/privacy') ? 'bg-gray-100 dark:bg-[rgb(44,44,44)] font-medium' : 'hover:bg-gray-100 dark:hover:bg-[rgb(60,60,60)] text-gray-700 dark:text-gray-300'}`}>
+                  <ShieldCheck size={15} className="mr-2 text-gray-500 group-hover:text-gray-900 dark:group-hover:text-white" />
+                  <button 
+                    onClick={() => navigate('/privacy')}
+                    className="flex-1 text-left"
+                  >
+                    Privacy Center
                   </button>
                 </div>
                 {/* Folders Section */}

@@ -195,4 +195,17 @@ export class OfflineDB {
       request.onerror = () => reject(request.error);
     });
   }
+
+  public static async clearAll(): Promise<void> {
+    const db = await this.getDB();
+    const storeNames = ['entries', 'sync_queue', 'folders'];
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(storeNames, 'readwrite');
+      storeNames.forEach((storeName) => {
+        tx.objectStore(storeName).clear();
+      });
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  }
 }
