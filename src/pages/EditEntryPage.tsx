@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useEditor, EditorContent } from '@tiptap/react';
@@ -14,10 +14,44 @@ import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import TextStyle from '@tiptap/extension-text-style';
 import Color from '@tiptap/extension-color';
-import { ArrowLeft, Bold, Italic, List, Heading1, Heading2, Code, Image as ImageIcon, CheckSquare, Smile, Tag, Loader } from 'lucide-react';
-import type { JournalEntry, JournalEntryFormData } from '../types/journal';
+import Link from '@tiptap/extension-link';
+import Table from '@tiptap/extension-table';
+import TableRow from '@tiptap/extension-table-row';
+import TableCell from '@tiptap/extension-table-cell';
+import TableHeader from '@tiptap/extension-table-header';
+import Highlight from '@tiptap/extension-highlight';
+import Placeholder from '@tiptap/extension-placeholder';
+
+import { 
+  ArrowLeft, 
+  Bold, 
+  Italic, 
+  List, 
+  Heading1, 
+  Heading2, 
+  Heading3, 
+  Code, 
+  CheckSquare, 
+  Smile, 
+  Tag, 
+  Link2, 
+  Table as TableIcon, 
+  Highlighter, 
+  Minus, 
+  Quote, 
+  Check, 
+  Cloud, 
+  History, 
+  Paperclip
+} from 'lucide-react';
+import type { JournalEntry } from '../types/journal';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
+import { validateFileUpload, sanitizeUploadFileName } from '../lib/security';
+import { DraftService } from '../services/draftService';
+import type { VersionSnapshot } from '../services/draftService';
+import SlashCommandMenu from '../components/SlashCommandMenu';
+import VersionHistoryModal from '../components/VersionHistoryModal';
 
 export default function EditEntryPage() {
   const navigate = useNavigate();
@@ -30,400 +64,661 @@ export default function EditEntryPage() {
   const [tags, setTags] = useState<string[]>([]);
   const [isFavorite, setIsFavorite] = useState<boolean>(false);
   const [isPrivate, setIsPrivate] = useState<boolean>(true);
-  const [saving, setSaving] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [tagInput, setTagInput] = useState<string>('');
-  
+
+  // Auto-save sync status
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'typing' | 'saving' | 'saved' | 'error'>('saved');
+  const [lastSavedTimestamp, setLastSavedTimestamp] = useState<string>('');
+  const [recoveryAvailable, setRecoveryAvailable] = useState<boolean>(false);
+  const [recoveredDraft, setRecoveredDraft] = useState<VersionSnapshot | null>(null);
+
+  // Slash commands state
+  const [slashOpen, setSlashOpen] = useState(false);
+  const [slashPosition, setSlashPosition] = useState({ top: 0, left: 0 });
+  const [slashQuery, setSlashQuery] = useState('');
+
+  // Version history modal state
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [versionSnapshots, setVersionSnapshots] = useState<VersionSnapshot[]>([]);
+
+  // Attachments
+  const [uploadingMedia, setUploadingMedia] = useState(false);
+  const autoSaveTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoadedRef = useRef(false);
+
   // TipTap editor setup
   const editor = useEditor({
     extensions: [
       Document,
       Text,
       Paragraph,
-      StarterKit,
+      StarterKit.configure({
+        document: false,
+        paragraph: false,
+        text: false,
+        heading: false,
+        bulletList: false,
+        listItem: false,
+      }),
       Heading.configure({
         levels: [1, 2, 3],
       }),
       BulletList,
       ListItem,
-      Image,
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+      }),
       TaskList,
       TaskItem.configure({
         nested: true,
       }),
       TextStyle,
       Color,
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 dark:text-blue-400 underline underline-offset-2',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse table-auto w-full my-4 border border-gray-200 dark:border-gray-700',
+        },
+      }),
+      TableRow,
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-neutral-800 font-semibold p-2',
+        },
+      }),
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-gray-200 dark:border-gray-700 p-2',
+        },
+      }),
+      Highlight.configure({
+        multicolor: true,
+      }),
+      Placeholder.configure({
+        placeholder: "Write your thoughts... Type '/' for commands",
+      }),
     ],
     content: '',
-    autofocus: false,
+    onUpdate: ({ editor }) => {
+      const selection = editor.state.selection;
+      const textBefore = editor.state.doc.textBetween(
+        Math.max(0, selection.from - 20),
+        selection.from,
+        '\n'
+      );
+
+      const slashMatch = textBefore.match(/\/([a-zA-Z0-9]*)$/);
+      if (slashMatch) {
+        setSlashQuery(slashMatch[1]);
+        const coords = editor.view.coordsAtPos(selection.from);
+        setSlashPosition({
+          top: coords.bottom + 8,
+          left: Math.max(16, coords.left),
+        });
+        setSlashOpen(true);
+      } else {
+        setSlashOpen(false);
+      }
+
+      triggerAutoSave();
+    },
   });
-  
-  // Fetch the entry data on mount
+
+  // Fetch initial entry
   useEffect(() => {
     async function fetchEntry() {
       if (!id || !user) return;
-      
       try {
         setLoading(true);
-        
         const { data, error } = await supabase
           .from('journal_entries')
           .select('*')
           .eq('id', id)
           .eq('user_id', user.id)
           .single();
-        
+
         if (error) throw error;
         if (!data) throw new Error('Entry not found');
-        
+
         setEntry(data);
         setTitle(data.title);
         setMood(data.mood || null);
         setTags(data.tags || []);
         setIsFavorite(data.is_favorite);
         setIsPrivate(data.is_private);
-        
-        // Set editor content
+
         if (editor) {
           editor.commands.setContent(data.content);
         }
-        
-      } catch (err) {
-        console.error('Error fetching entry:', err);
-        setError('Failed to load journal entry. Please try again later.');
+
+        // Check if there is an unsaved local draft newer than server version
+        const draft = DraftService.getDraft(id);
+        if (draft && draft.content && draft.content !== data.content) {
+          setRecoveryAvailable(true);
+          setRecoveredDraft({
+            id: 'edit_recovery',
+            timestamp: draft.lastSavedAt,
+            title: draft.title,
+            content: draft.content,
+            mood: draft.mood,
+            tags: draft.tags,
+            wordCount: draft.content.length,
+          });
+          setVersionSnapshots(draft.versionHistory || []);
+        }
+
+        isLoadedRef.current = true;
+      } catch (err: any) {
+        console.error('Error loading entry:', err);
+        setError('Failed to load journal entry.');
       } finally {
         setLoading(false);
       }
     }
-    
+
     fetchEntry();
   }, [id, user, editor]);
-  
-  const handleAddTag = () => {
-    if (!tagInput.trim()) return;
-    
-    if (!tags.includes(tagInput.trim())) {
-      setTags([...tags, tagInput.trim()]);
+
+  // The central Auto-Save pipeline
+  const triggerAutoSave = useCallback(() => {
+    if (!isLoadedRef.current || !id || !user) return;
+
+    setSyncStatus('typing');
+
+    if (autoSaveTimerRef.current) {
+      clearTimeout(autoSaveTimerRef.current);
     }
-    
-    setTagInput('');
-  };
-  
-  const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!editor || !user || !id) return;
-    
-    try {
-      setSaving(true);
-      
-      const editorContent = editor.getHTML();
-      
-      if (!title.trim()) {
-        setError('Title is required');
-        return;
-      }
-      
-      const updatedEntry: JournalEntryFormData = {
-        title: title.trim(),
-        content: editorContent,
+
+    autoSaveTimerRef.current = setTimeout(async () => {
+      const currentContent = editor?.getHTML() || '';
+      const currentTitle = title.trim();
+
+      // 1. Save local draft
+      DraftService.saveDraft(id, {
+        title: currentTitle,
+        content: currentContent,
         mood,
         tags,
-        is_favorite: isFavorite,
-        is_private: isPrivate,
-      };
-      
-      const { error } = await supabase
-        .from('journal_entries')
-        .update(updatedEntry)
-        .eq('id', id)
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      
-      navigate(`/entry/${id}`);
-    } catch (err) {
-      console.error('Error updating entry:', err);
-      setError('Failed to update journal entry. Please try again.');
+      });
+
+      setSyncStatus('saving');
+
+      // 2. Sync to Supabase server
+      try {
+        const { error } = await supabase
+          .from('journal_entries')
+          .update({
+            title: currentTitle || 'Untitled Entry',
+            content: currentContent,
+            mood,
+            tags: tags.length > 0 ? tags : undefined,
+            is_favorite: isFavorite,
+            is_private: isPrivate,
+          })
+          .eq('id', id)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+
+        setSyncStatus('saved');
+        setLastSavedTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch (err) {
+        console.error('Autosave error:', err);
+        setSyncStatus('error');
+      }
+    }, 600);
+  }, [id, user, title, editor, mood, tags, isFavorite, isPrivate]);
+
+  useEffect(() => {
+    if (isLoadedRef.current) {
+      triggerAutoSave();
+    }
+  }, [title, mood, tags, isFavorite, isPrivate, triggerAutoSave]);
+
+  const handleRestoreDraft = (snapshot: VersionSnapshot) => {
+    setTitle(snapshot.title);
+    if (snapshot.mood) setMood(snapshot.mood as any);
+    if (snapshot.tags) setTags(snapshot.tags);
+    if (editor) {
+      editor.commands.setContent(snapshot.content);
+    }
+    setRecoveryAvailable(false);
+    setSyncStatus('saved');
+  };
+
+  const handleAttachmentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !e.target.files[0] || !user) return;
+    const file = e.target.files[0];
+
+    const validation = validateFileUpload(file, 10 * 1024 * 1024);
+    if (!validation.valid) {
+      alert(validation.error || 'Invalid file format');
+      return;
+    }
+
+    setUploadingMedia(true);
+    try {
+      const sanitizedName = sanitizeUploadFileName(file.name);
+      const filePath = `${user.id}/${sanitizedName}`;
+
+      const { data, error } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { contentType: file.type });
+
+      if (!error && data) {
+        const { data: publicData } = supabase.storage.from('avatars').getPublicUrl(data.path);
+        const url = publicData?.publicUrl;
+        if (url && editor) {
+          editor.chain().focus().setImage({ src: url }).run();
+          triggerAutoSave();
+        }
+      }
+    } catch (err: any) {
+      alert(`Upload error: ${err.message}`);
     } finally {
-      setSaving(false);
+      setUploadingMedia(false);
     }
   };
-  
+
+  const handleInsertLink = () => {
+    if (!editor) return;
+    const previousUrl = editor.getAttributes('link').href;
+    const url = window.prompt('Enter URL:', previousUrl);
+    if (url === null) return;
+    if (url === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+      return;
+    }
+    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+  };
+
+  const handleAddTag = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+      setTags([...tags, tagInput.trim()]);
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-full">
-        <div className="animate-pulse-slow">
-          <Loader className="w-16 h-16 animate-spin text-primary-500" />
-        </div>
+      <div className="flex items-center justify-center min-h-[50vh]">
+        <div className="w-8 h-8 border-2 border-black dark:border-white border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
-  
+
   if (error || !entry) {
     return (
-      <div className="p-6 text-center">
+      <div className="p-8 text-center">
         <p className="text-red-500 mb-4">{error || 'Entry not found'}</p>
-        <button 
-          onClick={() => navigate(-1)} 
-          className="btn btn-primary"
-        >
+        <button onClick={() => navigate(-1)} className="btn btn-primary text-xs">
           Go Back
         </button>
       </div>
     );
   }
-  
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="container mx-auto p-4 max-w-4xl"
+      className="max-w-4xl mx-auto px-2 py-4 pb-20 relative"
     >
-      <div className="mb-6 flex justify-between items-center">
-        <button 
-          onClick={() => navigate(-1)} 
-          className="flex items-center text-gray-600 dark:text-gray-300 hover:text-primary-500"
+      {/* Top Floating Action Bar */}
+      <div className="flex items-center justify-between mb-6 sticky top-2 z-30 bg-white/90 dark:bg-neutral-900/90 backdrop-blur-md py-2.5 px-4 rounded-xl border border-gray-200/80 dark:border-gray-800 shadow-sm">
+        <button
+          onClick={() => navigate(`/entry/${id}`)}
+          className="flex items-center text-xs font-medium text-gray-500 hover:text-black dark:hover:text-white transition-colors"
         >
-          <ArrowLeft size={20} className="mr-1" />
-          <span>Back</span>
+          <ArrowLeft size={14} className="mr-1.5" />
+          View Entry
         </button>
-        
-        <h1 className="text-2xl font-bold text-center">Edit Journal Entry</h1>
-        
-        <div className="w-20"></div> {/* Empty div for flex spacing */}
+
+        {/* Auto-Save & Sync Status Indicator */}
+        <div className="flex items-center space-x-3 text-xs">
+          {syncStatus === 'saving' && (
+            <span className="flex items-center text-gray-500">
+              <Cloud size={14} className="mr-1.5 animate-pulse text-amber-500" />
+              Saving changes...
+            </span>
+          )}
+          {syncStatus === 'saved' && (
+            <span className="flex items-center text-emerald-600 dark:text-emerald-400 font-medium">
+              <Check size={14} className="mr-1 stroke-[2.5]" />
+              Saved {lastSavedTimestamp ? `at ${lastSavedTimestamp}` : ''}
+            </span>
+          )}
+          {syncStatus === 'typing' && (
+            <span className="flex items-center text-gray-400">
+              <Cloud size={14} className="mr-1.5 opacity-60" />
+              Unsaved changes
+            </span>
+          )}
+
+          {/* Version History Button */}
+          <button
+            type="button"
+            onClick={() => {
+              const draft = DraftService.getDraft(id);
+              setVersionSnapshots(draft?.versionHistory || []);
+              setHistoryOpen(true);
+            }}
+            className="p-1.5 rounded-lg text-gray-500 hover:text-black dark:hover:text-white hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
+            title="Version history and checkpoints"
+          >
+            <History size={16} />
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate(`/entry/${id}`)}
+            className="py-1 px-3 rounded-lg bg-black dark:bg-white text-white dark:text-black text-xs font-semibold hover:opacity-90 transition shadow-sm"
+          >
+            Done
+          </button>
+        </div>
       </div>
-      
-      {error && (
-        <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
-          {error}
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <label htmlFor="title" className="block mb-2 text-sm font-medium">Title</label>
-          <input
-            type="text"
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="input w-full"
-            placeholder="Give your entry a title"
-            required
-          />
-        </div>
-        
-        <div>
-          <label className="block mb-2 text-sm font-medium">How are you feeling?</label>
-          <div className="flex flex-wrap gap-3">
-            {['joyful', 'peaceful', 'sad', 'angry', 'anxious'].map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMood(m as any)}
-                className={`px-4 py-2 rounded-full text-white transition-transform 
-                ${mood === m ? 'ring-2 ring-offset-2 scale-110' : 'opacity-70 hover:opacity-100'} 
-                ${m === 'joyful' ? 'bg-mood-joyful' : ''}
-                ${m === 'peaceful' ? 'bg-mood-peaceful' : ''}
-                ${m === 'sad' ? 'bg-mood-sad' : ''}
-                ${m === 'angry' ? 'bg-mood-angry' : ''}
-                ${m === 'anxious' ? 'bg-mood-anxious' : ''}`}
-              >
-                <span className="flex items-center">
-                  <Smile size={18} className="mr-2" />
-                  {m.charAt(0).toUpperCase() + m.slice(1)}
-                </span>
-              </button>
-            ))}
-            
-            {mood && (
-              <button
-                type="button"
-                onClick={() => setMood(null)}
-                className="px-4 py-2 rounded-full border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                Clear
-              </button>
-            )}
+
+      {/* Crash Recovery Draft Banner */}
+      {recoveryAvailable && recoveredDraft && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 text-xs flex items-center justify-between">
+          <div>
+            <span className="font-semibold text-amber-900 dark:text-amber-200">
+              Local draft with unsaved edits found
+            </span>
+            <p className="text-amber-700 dark:text-amber-300 text-[11px] mt-0.5">
+              Saved locally at {new Date(recoveredDraft.timestamp).toLocaleTimeString()}.
+            </p>
           </div>
-        </div>
-        
-        <div>
-          <label className="block mb-2 text-sm font-medium">Tags</label>
-          <div className="flex items-center">
-            <div className="relative flex-grow">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                className="input w-full pr-10"
-                placeholder="Add tags (press Enter)"
-              />
-              <div className="absolute inset-y-0 right-0 flex items-center pr-3">
-                <Tag size={18} className="text-gray-400" />
-              </div>
-            </div>
+          <div className="flex items-center space-x-2">
             <button
-              type="button"
-              onClick={handleAddTag}
-              className="ml-2 px-4 py-2 bg-primary-500 text-white rounded-md hover:bg-primary-600"
+              onClick={() => handleRestoreDraft(recoveredDraft)}
+              className="px-2.5 py-1 rounded bg-amber-600 text-white font-medium hover:bg-amber-700 transition"
             >
-              Add
+              Restore Draft
+            </button>
+            <button
+              onClick={() => {
+                DraftService.clearDraft(id);
+                setRecoveryAvailable(false);
+              }}
+              className="px-2.5 py-1 rounded border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition"
+            >
+              Discard
             </button>
           </div>
-          
-          {tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-2">
+        </div>
+      )}
+
+      {/* Main Document Body */}
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-sm p-6 sm:p-10">
+        <input
+          type="text"
+          placeholder="Untitled"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full text-3xl sm:text-4xl font-bold tracking-tight mb-6 bg-transparent border-0 focus:outline-none focus:ring-0 p-0 text-gray-900 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-700"
+        />
+
+        {/* Toolbar */}
+        {editor && (
+          <div className="flex flex-wrap items-center gap-1 pb-4 mb-6 border-b border-gray-100 dark:border-gray-800 text-gray-600 dark:text-gray-300">
+            <button
+              onClick={() => editor.chain().focus().toggleBold().run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('bold') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Bold"
+            >
+              <Bold size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleItalic().run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('italic') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Italic"
+            >
+              <Italic size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleHighlight({ color: '#fef08a' }).run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('highlight') ? 'bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200' : ''
+              }`}
+              title="Highlight"
+            >
+              <Highlighter size={15} />
+            </button>
+
+            <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+            <button
+              onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Heading 1"
+            >
+              <Heading1 size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Heading 2"
+            >
+              <Heading2 size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('heading', { level: 3 }) ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Heading 3"
+            >
+              <Heading3 size={15} />
+            </button>
+
+            <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+            <button
+              onClick={() => editor.chain().focus().toggleBulletList().run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Bullet list"
+            >
+              <List size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleTaskList().run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('taskList') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Checklist"
+            >
+              <CheckSquare size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleBlockquote().run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('blockquote') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Quote"
+            >
+              <Quote size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('codeBlock') ? 'bg-gray-200 dark:bg-neutral-700 text-black dark:text-white' : ''
+              }`}
+              title="Code block"
+            >
+              <Code size={15} />
+            </button>
+
+            <div className="h-4 w-[1px] bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+            <button
+              onClick={handleInsertLink}
+              className={`p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition ${
+                editor.isActive('link') ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : ''
+              }`}
+              title="Link"
+            >
+              <Link2 size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
+              className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
+              title="Table"
+            >
+              <TableIcon size={15} />
+            </button>
+            <button
+              onClick={() => editor.chain().focus().setHorizontalRule().run()}
+              className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition"
+              title="Divider"
+            >
+              <Minus size={15} />
+            </button>
+
+            <label className="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-neutral-800 transition cursor-pointer" title="Attachment">
+              <input
+                type="file"
+                accept="image/jpeg, image/png, image/webp, image/gif"
+                onChange={handleAttachmentUpload}
+                className="hidden"
+                disabled={uploadingMedia}
+              />
+              <Paperclip size={15} className={uploadingMedia ? 'animate-spin' : ''} />
+            </label>
+          </div>
+        )}
+
+        {/* TipTap Canvas */}
+        <div className="min-h-[400px] prose prose-neutral dark:prose-invert max-w-none focus:outline-none text-[15px] leading-relaxed">
+          <EditorContent editor={editor} />
+        </div>
+
+        {/* Slash Command Autocomplete Menu */}
+        <SlashCommandMenu
+          editor={editor}
+          isOpen={slashOpen}
+          onClose={() => setSlashOpen(false)}
+          position={slashPosition}
+          query={slashQuery}
+        />
+
+        {/* Metadata section */}
+        <div className="mt-10 pt-6 border-t border-gray-100 dark:border-gray-800 space-y-4">
+          <div>
+            <div className="flex items-center text-xs font-medium text-gray-500 mb-2">
+              <Smile size={14} className="mr-1.5" />
+              <span>Mood</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {(['joyful', 'peaceful', 'sad', 'angry', 'anxious'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMood(mood === m ? null : m)}
+                  className={`px-3 py-1 rounded-full text-xs transition ${
+                    mood === m
+                      ? 'bg-black text-white dark:bg-white dark:text-black font-medium'
+                      : 'bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  {m.charAt(0).toUpperCase() + m.slice(1)}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center text-xs font-medium text-gray-500 mb-2">
+              <Tag size={14} className="mr-1.5" />
+              <span>Tags</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
               {tags.map((tag) => (
-                <div key={tag} className="inline-flex items-center bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
-                  <span className="mr-1 text-sm">{tag}</span>
+                <span
+                  key={tag}
+                  className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-neutral-800 text-gray-700 dark:text-gray-300"
+                >
+                  #{tag}
                   <button
                     type="button"
                     onClick={() => handleRemoveTag(tag)}
-                    className="text-gray-500 hover:text-red-500"
+                    className="ml-1.5 hover:text-black dark:hover:text-white"
                   >
-                    &times;
+                    ×
                   </button>
-                </div>
+                </span>
               ))}
-            </div>
-          )}
-        </div>
-        
-        <div>
-          <label className="block mb-2 text-sm font-medium">Content</label>
-          {editor && (
-            <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden">
-              <div className="bg-gray-50 dark:bg-gray-800 p-2 border-b border-gray-300 dark:border-gray-700 flex flex-wrap gap-2">
-                <button
-                  onClick={() => editor.chain().focus().toggleBold().run()}
-                  className={`p-2 rounded ${editor.isActive('bold') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Bold"
-                >
-                  <Bold size={18} />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleItalic().run()}
-                  className={`p-2 rounded ${editor.isActive('italic') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Italic"
-                >
-                  <Italic size={18} />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-                  className={`p-2 rounded ${editor.isActive('heading', { level: 1 }) ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Heading 1"
-                >
-                  <Heading1 size={18} />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-                  className={`p-2 rounded ${editor.isActive('heading', { level: 2 }) ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Heading 2"
-                >
-                  <Heading2 size={18} />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleBulletList().run()}
-                  className={`p-2 rounded ${editor.isActive('bulletList') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Bullet List"
-                >
-                  <List size={18} />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleTaskList().run()}
-                  className={`p-2 rounded ${editor.isActive('taskList') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Task List"
-                >
-                  <CheckSquare size={18} />
-                </button>
-                <button
-                  onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-                  className={`p-2 rounded ${editor.isActive('codeBlock') ? 'bg-gray-200 dark:bg-gray-700' : 'bg-gray-100 dark:bg-gray-800'}`}
-                  title="Code Block"
-                >
-                  <Code size={18} />
-                </button>
-                <button
-                  onClick={() => {
-                    const url = window.prompt('Enter image URL')
-                    if (url) {
-                      editor.chain().focus().setImage({ src: url }).run()
-                    }
-                  }}
-                  className="p-2 rounded bg-gray-100 dark:bg-gray-800"
-                  title="Insert Image"
-                >
-                  <ImageIcon size={18} />
-                </button>
-              </div>
-              
-              <EditorContent 
-                editor={editor} 
-                className="prose dark:prose-invert max-w-none p-4 min-h-[300px] focus:outline-none" 
+              <input
+                type="text"
+                placeholder="Add tag and press Enter"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                className="text-xs px-2.5 py-1 bg-transparent border border-gray-200 dark:border-gray-700 rounded-md focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white"
               />
             </div>
-          )}
+          </div>
+
+          <div className="flex items-center space-x-6 pt-2">
+            <label className="inline-flex items-center text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isFavorite}
+                onChange={(e) => setIsFavorite(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-black dark:text-white focus:ring-0 mr-2"
+              />
+              Mark as favorite
+            </label>
+            <label className="inline-flex items-center text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={isPrivate}
+                onChange={(e) => setIsPrivate(e.target.checked)}
+                className="h-3.5 w-3.5 rounded border-gray-300 text-black dark:text-white focus:ring-0 mr-2"
+              />
+              Strict private entry
+            </label>
+          </div>
         </div>
-        
-        <div className="flex flex-wrap gap-4 mt-4">
-          <label className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isFavorite}
-              onChange={() => setIsFavorite(!isFavorite)}
-              className="sr-only peer"
-            />
-            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
-            <span className="ms-3 text-sm font-medium">Mark as favorite</span>
-          </label>
-          
-          <label className="inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={isPrivate}
-              onChange={() => setIsPrivate(!isPrivate)}
-              className="sr-only peer"
-            />
-            <div className="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-primary-500"></div>
-            <span className="ms-3 text-sm font-medium">Private entry</span>
-          </label>
-        </div>
-        
-        <div className="flex justify-end gap-3 pt-4">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-md"
-            disabled={saving}
-          >
-            Cancel
-          </button>
-          
-          <button
-            type="submit"
-            className="btn btn-primary px-6 py-2 flex items-center"
-            disabled={saving}
-          >
-            {saving ? (
-              <>
-                <Loader size={18} className="animate-spin mr-2" />
-                Saving...
-              </>
-            ) : (
-              'Save Changes'
-            )}
-          </button>
-        </div>
-      </form>
+      </div>
+
+      {/* Version History Modal */}
+      <VersionHistoryModal
+        isOpen={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        versions={versionSnapshots}
+        onRestore={handleRestoreDraft}
+        currentTitle={title}
+      />
     </motion.div>
   );
 }

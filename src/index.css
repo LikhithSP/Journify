@@ -80,7 +80,6 @@
     @apply bg-gray-100 dark:bg-gray-800 text-black dark:text-white font-medium;
   }
   
-  /* Additional Notion-inspired styles */
   .notion-button {
     @apply bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md px-3 py-1.5 text-sm font-medium transition-colors;
   }
@@ -92,4 +91,78 @@
   .notion-card {
     @apply p-4 rounded-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md;
   }
+}
+
+/* TipTap Notion-style Editor Typography */
+.ProseMirror {
+  outline: none !important;
+  min-height: 320px;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #9ca3af;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid currentColor;
+  opacity: 0.85;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+}
+
+.ProseMirror ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+}
+
+.ProseMirror ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror ul[data-type="taskList"] li > label {
+  margin-right: 0.5rem;
+  user-select: none;
+}
+
+.ProseMirror ul[data-type="taskList"] li > div {
+  flex: 1 1 auto;
+}
+
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1.5rem 0;
+  width: 100%;
+  overflow-x: auto;
+  display: table;
+}
+
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid rgba(156, 163, 175, 0.3);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  min-width: 100px;
+}
+
+.ProseMirror th {
+  background-color: rgba(156, 163, 175, 0.1);
+  font-weight: 600;
+}
+
+.ProseMirror mark {
+  background-color: #fef08a;
+  border-radius: 2px;
+  padding: 0.1rem 0.25rem;
+}
+
+.dark .ProseMirror mark {
+  background-color: rgba(234, 179, 8, 0.3);
+  color: #fef08a;
 }
