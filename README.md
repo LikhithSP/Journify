@@ -260,6 +260,26 @@ Browser  ───►  Install Journify  ───►  PWA Shell  ───►  
    npm run build
    ```
 
+## 📚 Documentation & Technical Specifications
+
+In-depth technical guides are available in the [`docs/`](docs/) directory:
+
+- 🏛️ **[System Architecture](docs/architecture.md)**: Deep dive into the offline-first sync engine, TipTap rich text pipeline, and Service Worker.
+- 🗄️ **[Database & Schema](docs/database.md)**: PostgreSQL schema, relational tables, and Row Level Security (RLS) policies.
+- 🔌 **[API & Data Contracts](docs/api.md)**: PostgREST queries, payloads, and Supabase Storage bucket configurations.
+- 🛡️ **[Security & Threat Model](docs/security.md)**: Comprehensive threat mitigation, input sanitization, and cryptographic transparency.
+- 🚀 **[Deployment Guide](docs/deployment.md)**: Build workflows, production settings, and hosting instructions.
+
+---
+
+## 🤝 Contributing & Community
+
+We welcome contributions! Please review our community guidelines:
+- **[Contributing Guide](CONTRIBUTING.md)**: Code standards and Pull Request process.
+- **[Code of Conduct](CODE_OF_CONDUCT.md)**: Standards for a welcoming community.
+- **[Security Policy](SECURITY.md)**: Responsible vulnerability disclosure.
+- **[Changelog](CHANGELOG.md)**: Record of changes and releases.
+
 ---
 
 ## 📁 Project Architecture
