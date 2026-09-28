@@ -74,8 +74,21 @@ export default function Layout() {
       return searchEntries[0]?.created_at || null;
     };
     const getStreak = () => {
-      // Calculate simple consecutive day streak
-      return Math.min(searchEntries.length, 7);
+      if (!searchEntries.length) return 0;
+      const uniqueDates = new Set(
+        searchEntries.map((e) => new Date(e.created_at).toISOString().slice(0, 10))
+      );
+      let streak = 0;
+      const checkDate = new Date();
+      const todayStr = checkDate.toISOString().slice(0, 10);
+      if (!uniqueDates.has(todayStr)) {
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      while (uniqueDates.has(checkDate.toISOString().slice(0, 10))) {
+        streak++;
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+      return streak;
     };
 
     const stopScheduler = NotificationService.startScheduler(getLastDate, getStreak);

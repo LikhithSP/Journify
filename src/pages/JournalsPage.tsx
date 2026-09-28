@@ -84,7 +84,7 @@ function MasonryGrid({
             placeholder="Search entries by title, notes, tags..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="w-full pl-9 pr-8 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-850/90 border border-neutral-200 dark:border-neutral-700/80 text-xs text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500 transition-all shadow-2xs"
+            className="w-full pl-9 pr-8 py-1.5 rounded-full bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-xs text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-neutral-400 dark:focus:ring-neutral-500 transition-all shadow-2xs"
           />
           {searchQuery && (
             <button
