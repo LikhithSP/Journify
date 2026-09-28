@@ -1,4 +1,4 @@
-# Journify - Your Daily Journal Companion
+# ✍🏻 Journify - Your Daily Companion
 
 <p align="center">
   <img src="./src/assets/landing.png" alt="Journify Landing Page" width="100%">
@@ -8,6 +8,7 @@
 </p>
 <p align="center">
   <img src="./src/assets/home.png" alt="Journify Home Dashboard" width="100%">
+<p align = "center">
   <img src="./src/assets/journal.png" alt="Journify Journal Reader" width="100%">
 </p>
 
@@ -34,9 +35,6 @@
 - **XSS Sanitization**: DOM-level HTML sanitization on all user-rendered rich content.
 - **Truthful Cryptography**: Accurate transport (TLS 1.3) and database at-rest (AES-256) transparency with no deceptive E2EE claims.
 
-<p align="center">
-  <img src="./src/assets/login.png" alt="Journify Authentication & Login" width="90%">
-</p>
 
 ---
 
@@ -69,9 +67,6 @@
 - **Quick Reflection Widget (Write Your Journal Now)**: Direct quick-session entry box with quick mood selector chips (`😊 Joyful`, `😌 Peaceful`, `😔 Sad`, `😠 Angry`, `😰 Anxious`), real-time word counter, and instant save.
 - **Streak & Consistency Tracker**: Real-time consecutive-day streak calculation with flame momentum indicators and weekly pulse activity dots.
 
-<p align="center">
-  <img src="./src/assets/home.png" alt="Journify Home Dashboard & Recent Showcase" width="90%">
-</p>
 
 ---
 
@@ -83,9 +78,7 @@
 - **Integrated Inline Search Bar**: Rounded quick-filter search bar with dark/light mode parity and instant query clearing.
 - **Book-Spread Dual-Page Journal Reader**: Elegant book-style reading view featuring vintage volume spreads, pinned memory photos, and smooth pagination.
 
-<p align="center">
-  <img src="./src/assets/journal.png" alt="Journify Book Spread Reader" width="90%">
-</p>
+
 
 ---
 
